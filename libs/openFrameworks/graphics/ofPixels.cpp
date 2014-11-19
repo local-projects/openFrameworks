@@ -415,10 +415,14 @@ void ofPixels_<PixelType>::swapRgb(){
 	case OF_PIXELS_BGR:
 	case OF_PIXELS_RGBA:
 	case OF_PIXELS_BGRA:{
-		Pixels pixels = getPixelsIter();
-		Pixel _end = pixels.end();
-		for(Pixel pixel=pixels.begin();pixel!=_end;pixel++){
-			std::swap(pixel[0],pixel[2]);
+//		Pixels pixels = getPixelsIter();
+//		Pixel _end = pixels.end();
+//		for(Pixel pixel=pixels.begin();pixel!=_end;pixel++){
+//			std::swap(pixel[0],pixel[2]);
+//		}
+		int sizePixels = width*height*getNumChannels();
+		for (int i=0; i< sizePixels; i+=getNumChannels()){
+			std::swap(pixels[i],pixels[i+2]);
 		}
 	}
 	break;
