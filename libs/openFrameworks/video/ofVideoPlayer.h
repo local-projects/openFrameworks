@@ -74,6 +74,7 @@ class ofVideoPlayer : public ofBaseVideoPlayer,public ofBaseVideoDraws{
 		void				setFrame(int frame);  // frame 0 = first frame...
 
 		void 				setUseTexture(bool bUse);
+		ofTexture *			getTexture();
 		ofTexture &			getTextureReference();
 		void 				draw(float x, float y, float w, float h);
 		void 				draw(float x, float y);
