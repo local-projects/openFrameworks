@@ -265,10 +265,10 @@ void ofEasyCam::mouseDragged(ofMouseEventArgs & mouse){
 }
 
 void ofEasyCam::mouseScrolled(ofMouseEventArgs & mouse){
-	prevPosition = ofCamera::getGlobalPosition();
-	prevAxisZ = getZAxis();
-	moveZ = mouse.y * 30 * sensitivityZ * (getDistance() + FLT_EPSILON)/ viewport.height;
-	bDoScrollZoom = true;
+//	prevPosition = ofCamera::getGlobalPosition();
+//	prevAxisZ = getZAxis();
+//	moveZ = mouse.y * 30 * sensitivityZ * (getDistance() + FLT_EPSILON)/ viewport.height;
+//	bDoScrollZoom = true;
 }
 
 
