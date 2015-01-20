@@ -119,10 +119,12 @@ inline int ofxNetworkCheckErrno(const string & file, const string & line){
 		//ofLogError("ofxNetwork") << file << ": " << line << " EAGAIN: try again";
 		break;
 #endif
+#if 0   // this was fixed in the main openFrameworks repo (Gal Sasson)
 #if !defined(TARGET_LINUX)
 	case OFXNETWORK_ERROR(WOULDBLOCK):
 		// represents "resource temporarily unavailable", can be ignored
 		break;
+#endif
 #endif
 	default:
 		ofLogError("ofxNetwork") << file << ": " << line << " unknown error: " << err << " see errno.h for description of the error";
