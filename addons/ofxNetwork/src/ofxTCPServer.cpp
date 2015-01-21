@@ -278,7 +278,6 @@ bool ofxTCPServer::isConnected(){
 
 //--------------------------
 bool ofxTCPServer::isClientSetup(int clientID){
-	ofMutex::ScopedLock Lock( mConnectionsLock );
 	return TCPConnections.find(clientID)!=TCPConnections.end();
 }
 
