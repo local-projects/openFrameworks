@@ -49,7 +49,10 @@ inline int ofxNetworkCheckErrno(const string & file, const string & line){
 		ofLogError("ofxNetwork") << file << ": " << line << " EOPNOTSUPP: specified flags not valid for this socket";
 		break;
 	case OFXNETWORK_ERROR(TIMEDOUT):
+// don't print TIMEDOUT error, this happens every time if you set non-blocking (Gal Sasson)
+#ifdef CHECK_ALSO_FOR_TIMEDOUT
 		ofLogError("ofxNetwork") << file << ": " << line << " ETIMEDOUT: timeout";
+#endif
 		break;
 #if !defined(TARGET_WIN32)
 	case OFXNETWORK_ERROR(IO):
