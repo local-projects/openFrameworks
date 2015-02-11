@@ -99,8 +99,8 @@
 //    _useTexture = YES;
 //    _useAlpha = NO;
     
-    NSLog(@"Loading %@", [url absoluteString]);
-    
+//    NSLog(@"Loading %@", [url absoluteString]);
+
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url options:nil];
     NSString *tracksKey = @"tracks";
     
