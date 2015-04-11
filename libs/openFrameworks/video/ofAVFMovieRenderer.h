@@ -71,6 +71,7 @@
 - (void)loadURLPath:(NSString *)urlPath;
 - (void)loadURL:(NSURL *)url;
 
+- (void)close;
 - (void)play;
 - (void)stop;
 

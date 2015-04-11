@@ -168,9 +168,8 @@
 //--------------------------------------------------------------
 - (void)dealloc
 {
-    [self stop];
-    
-    self.playerItemVideoOutput = nil;
+
+    [self close];
 
     if (_textureCache != NULL) {
         CVOpenGLTextureCacheRelease(_textureCache);
@@ -184,9 +183,19 @@
         CVPixelBufferRelease(_latestPixelFrame);
         _latestPixelFrame = NULL;
     }
-    
+
+    [super dealloc];
+}
+
+//--------------------------------------------------------------
+- (void)close
+{
+    [self stop];
+
+    self.playerItemVideoOutput = nil;
+
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    
+
     if (self.playerItem) {
         [self.playerItem removeObserver:self forKeyPath:@"status"];
         self.playerItem = nil;
@@ -195,8 +204,7 @@
     [self.player replaceCurrentItemWithPlayerItem:nil];
     self.player = nil;
 
-    [super dealloc];
-}
+};
 
 //--------------------------------------------------------------
 - (void)play

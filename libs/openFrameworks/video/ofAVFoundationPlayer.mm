@@ -39,23 +39,22 @@ bool ofAVFoundationPlayer::load(string path)
         close();
     }
     
-    @autoreleasepool {
+    if (moviePlayer == nil) {
         moviePlayer = [[AVFMovieRenderer alloc] init];
         [moviePlayer setUseAlpha:(pixelFormat == OF_PIXELS_RGBA)];
         [moviePlayer setUseTexture:YES];
-
-
-        if (Poco::icompare(path.substr(0, 7), "http://")  == 0 ||
-            Poco::icompare(path.substr(0, 8), "https://") == 0 ||
-            Poco::icompare(path.substr(0, 7), "rtsp://")  == 0) {
-            [moviePlayer loadURLPath:[NSString stringWithUTF8String:path.c_str()]];
-        }
-        else {
-            path = ofToDataPath(path, false);
-            [moviePlayer loadFilePath:[NSString stringWithUTF8String:path.c_str()]];
-        }
     }
-    
+
+    if (Poco::icompare(path.substr(0, 7), "http://")  == 0 ||
+        Poco::icompare(path.substr(0, 8), "https://") == 0 ||
+        Poco::icompare(path.substr(0, 7), "rtsp://")  == 0) {
+        [moviePlayer loadURLPath:[NSString stringWithUTF8String:path.c_str()]];
+    }
+    else {
+        path = ofToDataPath(path, false);
+        [moviePlayer loadFilePath:[NSString stringWithUTF8String:path.c_str()]];
+    }
+
     bShouldPlay = false;
     return true;
 }
