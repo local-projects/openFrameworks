@@ -65,10 +65,11 @@ void ofAVFoundationPlayer::close()
     pixels.clear();
     
     if (moviePlayer != nil) {
-        [moviePlayer release];
-        moviePlayer = nil;
+//        [moviePlayer release];
+//        moviePlayer = nil;
+        [moviePlayer close];
     }
-    
+
     bInitialized = false;
     bNewFrame = false;
 }
