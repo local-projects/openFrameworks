@@ -101,6 +101,12 @@
     
 //    NSLog(@"Loading %@", [url absoluteString]);
 
+
+    if (self.player == nil) {
+        self.player = [[AVPlayer alloc] init];
+        [self.player autorelease];
+    }
+
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:url options:nil];
     NSString *tracksKey = @"tracks";
     
@@ -179,10 +185,6 @@
         CVOpenGLTextureRelease(_latestTextureFrame);
         _latestTextureFrame = NULL;
     }
-    if (_latestPixelFrame != NULL) {
-        CVPixelBufferRelease(_latestPixelFrame);
-        _latestPixelFrame = NULL;
-    }
 
     [super dealloc];
 }
@@ -192,17 +194,32 @@
 {
     [self stop];
 
-    self.playerItemVideoOutput = nil;
+    if (_latestPixelFrame != NULL) {
+        CVPixelBufferRelease(_latestPixelFrame);
+        _latestPixelFrame = NULL;
+    }
+
+    if (self.playerItemVideoOutput) {
+        self.playerItemVideoOutput = nil;
+    } else {
+        NSLog(@"No playerItemVideoOutput!");
+    }
 
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
     if (self.playerItem) {
         [self.playerItem removeObserver:self forKeyPath:@"status"];
         self.playerItem = nil;
+    } else {
+        NSLog(@"No playerItem!");
     }
 
-    [self.player replaceCurrentItemWithPlayerItem:nil];
-    self.player = nil;
+    if (self.player) {
+        [self.player replaceCurrentItemWithPlayerItem:nil];
+        self.player = nil;
+    } else {
+        NSLog(@"No player!");
+    }
 
 };
 
