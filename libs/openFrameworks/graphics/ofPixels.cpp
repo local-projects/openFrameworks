@@ -56,7 +56,7 @@ static float pixelBytesFromPixelFormat(ofPixelFormat format){
 
 template<typename PixelType>
 static int bytesFromPixelFormat(int w, int h, ofPixelFormat format){
-	return w*h*pixelBytesFromPixelFormat<PixelType>(format);
+	return w*h*(int)ceil(pixelBytesFromPixelFormat<PixelType>(format));
 }
 
 static int channelsFromPixelFormat(ofPixelFormat format){
