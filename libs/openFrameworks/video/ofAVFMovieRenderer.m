@@ -185,6 +185,10 @@
         CVOpenGLTextureRelease(_latestTextureFrame);
         _latestTextureFrame = NULL;
     }
+    if (_latestPixelFrame != NULL) {
+        CVPixelBufferRelease(_latestPixelFrame);
+        _latestPixelFrame = NULL;
+    }
 
     [super dealloc];
 }
@@ -193,11 +197,6 @@
 - (void)close
 {
     [self stop];
-
-    if (_latestPixelFrame != NULL) {
-        CVPixelBufferRelease(_latestPixelFrame);
-        _latestPixelFrame = NULL;
-    }
 
     if (self.playerItemVideoOutput) {
         self.playerItemVideoOutput = nil;
@@ -287,10 +286,6 @@
     CMTime outputItemTime = [self.playerItemVideoOutput itemTimeForHostTime:CACurrentMediaTime()];
     if ([self.playerItemVideoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
         // Get pixels.
-        if (_latestPixelFrame != NULL) {
-            CVPixelBufferRelease(_latestPixelFrame);
-            _latestPixelFrame = NULL;
-        }
         _latestPixelFrame = [self.playerItemVideoOutput copyPixelBufferForItemTime:outputItemTime
                                                             itemTimeForDisplay:NULL];
         
@@ -306,8 +301,15 @@
             if (err != noErr) {
                 NSLog(@"Error creating OpenGL texture %d", err);
             }
+
         }
-                
+
+        // Release pixels
+        if (_latestPixelFrame != NULL) {
+            CVPixelBufferRelease(_latestPixelFrame);
+            _latestPixelFrame = NULL;
+        }
+
         // Update time.
         _currentTime = self.player.currentItem.currentTime;
         _duration = self.player.currentItem.duration;
