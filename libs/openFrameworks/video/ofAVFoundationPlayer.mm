@@ -62,8 +62,8 @@ bool ofAVFoundationPlayer::load(string path)
 //--------------------------------------------------------------
 void ofAVFoundationPlayer::close()
 {
-    pixels.clear();
-    
+//    pixels.clear();
+
     if (moviePlayer != nil) {
 //        [moviePlayer release];
 //        moviePlayer = nil;
@@ -87,7 +87,7 @@ void ofAVFoundationPlayer::update()
     
     if ([moviePlayer isLoaded]) {
         if (!bInitialized) {
-            reallocatePixels();
+//            reallocatePixels();
             bInitialized = true;
 
             if (scrubToTime != 0.0f) {
