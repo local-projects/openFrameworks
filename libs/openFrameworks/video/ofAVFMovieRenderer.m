@@ -200,25 +200,28 @@
 
     if (self.playerItemVideoOutput) {
         self.playerItemVideoOutput = nil;
-    } else {
-        NSLog(@"No playerItemVideoOutput!");
     }
+//    else {
+//        NSLog(@"No playerItemVideoOutput!");
+//    }
 
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
     if (self.playerItem) {
         [self.playerItem removeObserver:self forKeyPath:@"status"];
         self.playerItem = nil;
-    } else {
-        NSLog(@"No playerItem!");
     }
+//    else {
+//        NSLog(@"No playerItem!");
+//    }
 
     if (self.player) {
         [self.player replaceCurrentItemWithPlayerItem:nil];
         self.player = nil;
-    } else {
-        NSLog(@"No player!");
     }
+//    else {
+//        NSLog(@"No player!");
+//    }
 
 };
 
