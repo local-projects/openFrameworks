@@ -426,7 +426,7 @@ static const NSString * ItemStatusContext;
 		dispatch_async(dispatch_get_main_queue(), ^{
 			bReady = true;
 			[self update]; // update as soon is ready so pixels are loaded.
-			[self setVolume:volume]; // set volume for current video.
+			//[self setVolume:volume]; // set volume for current video.
 			if([self.delegate respondsToSelector:@selector(playerReady)]) {
 				[self.delegate playerReady];
 			}
