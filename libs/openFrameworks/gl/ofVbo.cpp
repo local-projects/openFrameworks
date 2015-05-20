@@ -230,10 +230,11 @@ ofVbo::ofVbo(const ofVbo & mom){
 	totalIndices = mom.totalIndices;
 	indexAttribute = mom.indexAttribute;
 
+	vaoChanged = mom.vaoChanged;
+	vaoID = mom.vaoID;
+
 	if(ofIsGLProgrammableRenderer()){
-		vaoID	   = mom.vaoID;
 		retainVAO(vaoID);
-		vaoChanged = mom.vaoChanged;
 	}
 }
 
@@ -257,11 +258,13 @@ ofVbo & ofVbo::operator=(const ofVbo& mom){
 	totalIndices = mom.totalIndices;
 	indexAttribute = mom.indexAttribute;
 
+	vaoChanged = mom.vaoChanged;
+	vaoID = mom.vaoID;
+
 	if(ofIsGLProgrammableRenderer()){
-		vaoID	   = mom.vaoID;
 		retainVAO(vaoID);
-		vaoChanged = mom.vaoChanged;
 	}
+
 	return *this;
 }
 
