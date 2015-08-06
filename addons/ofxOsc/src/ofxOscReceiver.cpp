@@ -208,6 +208,21 @@ void ofxOscReceiver::ProcessMessage( const osc::ReceivedMessage &m, const IpEndp
 	releaseMutex();
 }
 
+int ofxOscReceiver::getNumWaitingMessages()
+{
+	// grab a lock on the queue
+	grabMutex();
+    
+	// check the length of the queue
+	int queue_length = (int)messages.size();
+    
+	// release the lock
+	releaseMutex();
+    
+	// return whether we have any messages
+	return queue_length;
+}
+
 bool ofxOscReceiver::hasWaitingMessages()
 {
 	// grab a lock on the queue
@@ -221,6 +236,23 @@ bool ofxOscReceiver::hasWaitingMessages()
 
 	// return whether we have any messages
 	return queue_length > 0;
+}
+
+void ofxOscReceiver::clearMessages(int n)
+{
+    grabMutex();
+    
+    if (n==0) {
+        n = (int)messages.size();
+    }
+    
+    while (messages.size()>0 && n-- > 0) {
+        ofxOscMessage* msg = messages.front();
+        delete msg;
+        messages.pop_front();
+    }
+    
+    releaseMutex();
 }
 
 bool ofxOscReceiver::getNextMessage( ofxOscMessage* message )
