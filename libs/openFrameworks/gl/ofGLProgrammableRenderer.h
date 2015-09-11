@@ -237,6 +237,10 @@ public:
 
 	const of3dGraphics & get3dGraphics() const;
 	of3dGraphics & get3dGraphics();
+	
+#ifdef ADD_OF_PATCH_FOR_NANOVG
+	void setCurrentShaderDirty() { currentShader=nullptr; }
+#endif
 
 private:
 
