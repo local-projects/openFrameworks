@@ -94,20 +94,9 @@ enum ofTargetPlatform{
 
 // then the the platform specific includes:
 #ifdef TARGET_WIN32
-	//this is for TryEnterCriticalSection
-	//http://www.zeroc.com/forums/help-center/351-ice-1-2-tryentercriticalsection-problem.html
-	#ifndef _WIN32_WINNT
-		#define _WIN32_WINNT 0x500
-	#endif
-	#define WIN32_LEAN_AND_MEAN
 
-	#if (_MSC_VER)
-		#define NOMINMAX		
-		//http://stackoverflow.com/questions/1904635/warning-c4003-and-errors-c2589-and-c2059-on-x-stdnumeric-limitsintmax
-	#endif
-
-	#include <windows.h>
 	#define GLEW_STATIC
+	#define GLEW_NO_GLU
 	#include "GL/glew.h"
 	#include "GL/wglew.h"
    	#include "glu.h"
@@ -116,20 +105,19 @@ enum ofTargetPlatform{
 	#if (_MSC_VER)       // microsoft visual studio
 		#include <stdint.h>
 		#include <functional>
-		#pragma warning(disable : 4018)		// signed/unsigned mismatch (since vector.size() is a size_t)
 		#pragma warning(disable : 4068)		// unknown pragmas
-		#pragma warning(disable : 4101)		// unreferenced local variable
-		#pragma warning(disable : 4267)		// conversion from size_t to Size warning... possible loss of data
-		#pragma warning(disable : 4311)		// type cast pointer truncation (qt vp)
-		#pragma warning(disable : 4312)		// type cast conversion (in qt vp)
+		#pragma warning(disable : 4756)		// overflow in constant arithmetic
 		#pragma warning(disable : 4800)		// 'Boolean' : forcing value to bool 'true' or 'false'
 
 		// make microsoft visual studio complain less about double / float conversion and
 		// truncation
 		#pragma warning(disable : 4244)
 		#pragma warning(disable : 4305)
-
 		// warnings: http://msdn.microsoft.com/library/2c8f766e.aspx
+
+		// NOMINMAX doesn't seem to work anymore in vs2015 so let's just remove them
+		#undef min
+		#undef max
 	#endif
 
 	#define TARGET_LITTLE_ENDIAN			// intel cpu
@@ -307,7 +295,7 @@ typedef TESSindex ofIndexType;
         #define OF_VIDEO_PLAYER_ANDROID
     #elif defined(TARGET_OF_IOS)
         #define OF_VIDEO_PLAYER_IOS
-	#elif defined(TARGET_WIN32) && !defined(__MINGW32__)
+	#elif defined(TARGET_WIN32)
         #define OF_VIDEO_PLAYER_DIRECTSHOW
     #elif defined(TARGET_OSX)
         //for 10.8 and 10.9 users we use AVFoundation, for 10.7 we use QTKit, for 10.6 users we use QuickTime
@@ -353,9 +341,25 @@ typedef TESSindex ofIndexType;
   #endif
 #endif
 
-// comment out this line to disable all poco related code
-#define OF_USING_POCO
+//------------------------------------------------ c++11
+// check if the compiler supports c++11. vs hasn't updated the value
+// of __cplusplus so we need to check for vs >= 2012 (1700)
+#if __cplusplus>=201103 || _MSC_VER >= 1700
+#define HAS_CPP11 1
+#endif
 
+//------------------------------------------------ thread local storage
+// clang has a bug where it won't support tls on some versions even
+// on c++11, this is a workaround that bug
+#ifndef HAS_TLS
+	#if __clang__
+		#if __has_feature(cxx_thread_local) && !defined(__MINGW64__) && !defined(__MINGW32__)
+			#define HAS_TLS 1
+		#endif
+	#else
+		#define HAS_TLS 1
+	#endif
+#endif
 
 //we don't want to break old code that uses ofSimpleApp
 //so we forward declare ofBaseApp and make ofSimpleApp mean the same thing
@@ -383,13 +387,8 @@ typedef ofBaseApp ofSimpleApp;
 #include <cfloat>
 #include <map>
 #include <stack>
-#if __cplusplus>=201103L || defined(_MSC_VER)
-	#include <unordered_map>
-	#include <memory>
-#else
-	#include <tr1/unordered_map>
-	using std::tr1::unordered_map;
-#endif
+#include <unordered_map>
+#include <memory>
 
 using namespace std;
 

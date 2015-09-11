@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofConstants.h"
+#include "utf8.h"
 #include <bitset> // For ofToBinary.
 
 #include "ofLog.h"
@@ -8,8 +9,6 @@
 #ifdef TARGET_WIN32	 // For ofLaunchBrowser.
 	#include <shellapi.h>
 #endif
-
-#include "Poco/Path.h"
 
 /// \name Elapsed Time
 /// \{
@@ -52,7 +51,7 @@ uint64_t ofGetElapsedTimeMicros();
 
 /// \brief Get the number of frames rendered since the program started.
 /// \returns the number of frames rendered since the program started.
-int ofGetFrameNum();
+uint64_t ofGetFrameNum();
 
 /// \}
 
@@ -132,6 +131,7 @@ string ofGetTimestampString();
 ///
 /// \param timestampFormat The formatting pattern.
 /// \returns the formatted timestamp as a string.
+/// \warning an invalid timestampFormat may crash windows apps.
 string ofGetTimestampString(const string& timestampFormat);
 
 /// \brief Get the current year.
@@ -185,9 +185,12 @@ string ofToDataPath(const string& path, bool absolute=false);
 
 /// \brief Reset the working directory to the platform default.
 ///
-/// The default working directory is usually in a data/ folder next to the
-/// openFrameworks application.
-void ofSetWorkingDirectoryToDefault();
+/// The default working directory is where the application was started from
+/// or the exe directory in case of osx bundles. GLUT might change the default
+/// working directory to the resources directory in the bundle in osx. This
+/// will restore it to the exe dir or whatever was the current dir when the
+/// application was started
+bool ofRestoreWorkingDirectoryToDefault();
 
 /// \brief Set the relative path to the data/ folder from the executable.
 ///
@@ -308,8 +311,8 @@ void ofSort(vector<T>& values) {
 ///    9, 8, 7, 6, 5, 4, 3, 2, 1, 0.
 ///
 /// \tparam T the type contained by the vector.
-/// \param The vector of values to be sorted.
-/// \param The comparison function.
+/// \param values The vector of values to be sorted.
+/// \param compare The comparison function.
 /// \sa http://www.cplusplus.com/reference/algorithm/sort/
 template<class T, class BoolFunction>
 void ofSort(vector<T>& values, BoolFunction compare) {
@@ -323,7 +326,7 @@ void ofSort(vector<T>& values, BoolFunction compare) {
 /// \returns true the index of the first target value found.
 /// \sa http://www.cplusplus.com/reference/iterator/distance/
 template <class T>
-unsigned int ofFind(const vector<T>& values, const T& target) {
+std::size_t ofFind(const vector<T>& values, const T& target) {
 	return distance(values.begin(), find(values.begin(), values.end(), target));
 }
 
@@ -400,7 +403,7 @@ bool ofIsStringInString(const string& haystack, const string& needle);
 /// \brief Check how many times a string contains another string.
 /// \param haystack The string to check for occurrence in .
 /// \param needle The string to check for.
-int ofStringTimesInString(const string& haystack, const string& needle);
+std::size_t ofStringTimesInString(const string& haystack, const string& needle);
 
 /// \brief Converts all characters in a string to lowercase.
 ///
@@ -415,7 +418,7 @@ int ofStringTimesInString(const string& haystack, const string& needle);
 ///
 /// \param src The UTF-8 encoded string to convert to lowercase.
 /// \returns the UTF-8 encoded string as all lowercase characters.
-string ofToLower(const string& src);
+string ofToLower(const string& src, const string & locale="");
 
 /// \brief Converts all characters in the string to uppercase.
 ///
@@ -430,7 +433,13 @@ string ofToLower(const string& src);
 ///
 /// \param src The UTF-8 encoded string to convert to uppercase.
 /// \returns the UTF-8 encoded string as all uppercase characters.
-string ofToUpper(const string& src);
+string ofToUpper(const string& src, const string & locale="");
+
+string ofTrimFront(const string & src, const string & locale = "");
+string ofTrimBack(const string & src, const string & locale = "");
+string ofTrim(const string & src, const string & locale = "");
+
+void ofAppendUTF8(string & str, int utf8);
 
 /// \brief Convert a variable length argument to a string.
 /// \param format a printf-style format string.
@@ -584,16 +593,29 @@ const char * ofFromString(const string & value);
 /// Converts a `std::string` representation of an int (e.g., `"3"`) to an actual
 /// `int`.
 ///
-/// \param The string representation of the integer.
+/// \param intString The string representation of the integer.
 /// \returns the integer represented by the string or 0 on failure.
 int ofToInt(const string& intString);
+
+// --------------------------------------------
+/// \name Number conversion
+/// \{
+
+/// \brief Convert a string to a int64_t.
+///
+/// Converts a `std::string` representation of a long integer
+/// (e.g., `"9223372036854775807"`) to an actual `int64_t`.
+///
+/// \param intString The string representation of the long integer.
+/// \returns the long integer represented by the string or 0 on failure.
+int64_t ofToInt64(const string& intString);
 
 /// \brief Convert a string to a float.
 ///
 /// Converts a std::string representation of a float (e.g., `"3.14"`) to an
 /// actual `float`.
 ///
-/// \param The string representation of the float.
+/// \param floatString string representation of the float.
 /// \returns the float represented by the string or 0 on failure.
 float ofToFloat(const string& floatString);
 
@@ -602,7 +624,7 @@ float ofToFloat(const string& floatString);
 /// Converts a std::string representation of a double (e.g., `"3.14"`) to an
 /// actual `double`.
 ///
-/// \param The string representation of the double.
+/// \param doubleString The string representation of the double.
 /// \returns the double represented by the string or 0 on failure.
 double ofToDouble(const string& doubleString);
 
@@ -612,7 +634,7 @@ double ofToDouble(const string& doubleString);
 /// actual `bool` using a case-insensitive comparison against the words `"true"`
 /// and `"false"`.
 ///
-/// \param The string representation of the boolean.
+/// \param boolString The string representation of the boolean.
 /// \returns the boolean represented by the string or 0 on failure.
 bool ofToBool(const string& boolString);
 
@@ -715,16 +737,7 @@ char ofToChar(const string& charString);
 /// \returns a binary string.
 template <class T>
 string ofToBinary(const T& value) {
-	ostringstream out;
-	const char* data = (const char*) &value;
-	// the number of bytes is determined by the datatype
-	int numBytes = sizeof(T);
-	// the bytes are stored backwards (least significant first)
-	for(int i = numBytes - 1; i >= 0; i--) {
-		bitset<8> cur(data[i]);
-		out << cur;
-	}
-	return out.str();
+	return std::bitset<8 * sizeof(T)>(*reinterpret_cast<const uint64_t*>(&value)).to_string();
 }
 
 /// \brief Converts a string value to a string of only 1s and 0s.
@@ -878,7 +891,9 @@ void ofSaveViewport(const string& filename);
 /// \param url the URL to open.
 /// \param uriEncodeQuery true if the query parameters in the given URL have
 /// already been URL encoded.
+#ifndef TARGET_EMSCRIPTEN
 void ofLaunchBrowser(const string& url, bool uriEncodeQuery=false);
+#endif
 
 /// \brief Executes a system command. Similar to run a command in terminal.
 /// \note Will block until the executed program/command has finished.
@@ -889,4 +904,37 @@ string ofSystem(const string& command);
 /// \returns the current ofTargetPlatform.
 ofTargetPlatform ofGetTargetPlatform();
 
+
+/// Allows to iterate over a string's utf8 codepoints.
+/// The easiest way to use it is with a c++11 range style
+/// for loop like:
+///
+/// for(auto c: ofUTF8Iterator(str)){
+/// ...
+/// }
+///
+/// which will iterate through all the utf8 codepoints in the
+/// string.
+class ofUTF8Iterator{
+public:
+	ofUTF8Iterator(const string & str);
+	utf8::iterator<std::string::const_iterator> begin() const;
+	utf8::iterator<std::string::const_iterator> end() const;
+	utf8::iterator<std::string::const_reverse_iterator> rbegin() const;
+	utf8::iterator<std::string::const_reverse_iterator> rend() const;
+
+private:
+	std::string src_valid;
+};
+
 /// \}
+
+
+
+/*! \cond PRIVATE */
+namespace of{
+namespace priv{
+    void setWorkingDirectoryToDefault();
+}
+}
+/*! \endcond */

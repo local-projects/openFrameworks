@@ -18,6 +18,7 @@ void ofInit();
 void ofSetupOpenGL(int w, int h, ofWindowMode screenMode);	// sets up the opengl context!
 shared_ptr<ofAppBaseWindow> ofCreateWindow(const ofWindowSettings & settings);	// sets up the opengl context!
 shared_ptr<ofMainLoop> ofGetMainLoop();
+void ofSetMainLoop(shared_ptr<ofMainLoop> mainLoop);
 
 template<typename Window>
 void ofSetupOpenGL(shared_ptr<Window> windowPtr, int w, int h, ofWindowMode screenMode){
@@ -42,7 +43,7 @@ void ofSetupOpenGL(Window * windowPtr, int w, int h, ofWindowMode screenMode){
 
 
 int ofRunApp(shared_ptr<ofBaseApp> OFSA);
-int ofRunApp(ofBaseApp * OFSA = NULL); // will be deprecated
+int ofRunApp(ofBaseApp * OFSA = nullptr); // will be deprecated
 void ofRunApp(shared_ptr<ofAppBaseWindow> window, shared_ptr<ofBaseApp> app);
 int ofRunMainLoop();
 
@@ -55,7 +56,7 @@ void		ofExit(int status=0);
 //-------------------------- time
 float 		ofGetFrameRate();
 float 		ofGetTargetFrameRate();
-int			ofGetFrameNum();
+uint64_t	ofGetFrameNum();
 void 		ofSetFrameRate(int targetRate);
 double		ofGetLastFrameTime();
 

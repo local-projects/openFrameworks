@@ -60,15 +60,15 @@ PLATFORM_DEFINES =
 PLATFORM_DEFINES = ANDROID
 
 ifndef $(NDK_PLATFORM)
-	NDK_PLATFORM = android-17
+	NDK_PLATFORM = android-19
 endif
 
 ifndef $(SDK_TARGET)
-	SDK_TARGET = android-17
+	SDK_TARGET = android-21
 endif
 
 ifndef $(GCC_VERSION)
-	GCC_VERSION = 4.8
+	GCC_VERSION = 4.9
 endif
 
 PROJECT_PATH=$(PWD)
@@ -171,7 +171,7 @@ PLATFORM_REQUIRED_ADDONS = ofxAndroid
 ################################################################################
 
 # Warning Flags (http://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html)
-PLATFORM_CFLAGS = -Wall -std=c++11
+PLATFORM_CFLAGS = -Wall -std=c++14
 
 # Code Generation Option Flags (http://gcc.gnu.org/onlinedocs/gcc/Code-Gen-Options.html)
 PLATFORM_CFLAGS += -nostdlib --sysroot=$(SYSROOT) -fno-short-enums -ffunction-sections -fdata-sections
@@ -285,6 +285,7 @@ PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/portaudio/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/rtAudio/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/poco/lib/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/openssl/lib/%
+PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/boost/include/boost/%
 
 # android project folders
 PROJECT_EXCLUSIONS += ./gen
@@ -358,6 +359,10 @@ PLATFORM_STATIC_LIBRARIES =
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoNetSSL.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoNet.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoCrypto.a
+PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoJSON.a
+PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoMongoDB.a
+PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoDataSQLite.a
+PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoData.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoUtil.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoXML.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoFoundation.a

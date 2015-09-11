@@ -5,9 +5,8 @@
 #include "FreeImage.h"
 
 #ifndef TARGET_EMSCRIPTEN
-#include "ofURLFileLoader.h"
-#include "Poco/URI.h"
-#include "Poco/Exception.h"
+	#include "ofURLFileLoader.h"
+	#include "Poco/URI.h"
 #endif
 #if defined(TARGET_ANDROID)
 #include "ofxAndroidUtils.h"
@@ -71,7 +70,7 @@ FIBITMAP* getBmpFromPixels(ofPixels_<PixelType> &pix){
 	FREE_IMAGE_TYPE freeImageType = getFreeImageType(pix);
 	FIBITMAP* bmp = FreeImage_AllocateT(freeImageType, width, height, bpp);
 	unsigned char* bmpBits = FreeImage_GetBits(bmp);
-	if(bmpBits != NULL) {
+	if(bmpBits != nullptr) {
 		int srcStride = width * pix.getBytesPerPixel();
 		int dstStride = FreeImage_GetPitch(bmp);
 		unsigned char* src = (unsigned char*) pixels;
@@ -99,7 +98,7 @@ FIBITMAP* getBmpFromPixels(ofPixels_<PixelType> &pix){
 template<typename PixelType>
 void putBmpIntoPixels(FIBITMAP * bmp, ofPixels_<PixelType> &pix, bool swapForLittleEndian = true) {
 	// convert to correct type depending on type of input bmp and PixelType
-	FIBITMAP* bmpConverted = NULL;
+	FIBITMAP* bmpConverted = nullptr;
 	FREE_IMAGE_TYPE imgType = FreeImage_GetImageType(bmp);
 	if(sizeof(PixelType)==1 &&
 		(FreeImage_GetColorType(bmp) == FIC_PALETTE || FreeImage_GetBPP(bmp) < 8
@@ -151,13 +150,13 @@ void putBmpIntoPixels(FIBITMAP * bmp, ofPixels_<PixelType> &pix, bool swapForLit
 	FreeImage_FlipVertical(bmp);
 	
 	unsigned char* bmpBits = FreeImage_GetBits(bmp);
-	if(bmpBits != NULL) {
+	if(bmpBits != nullptr) {
 		pix.setFromAlignedPixels((PixelType*) bmpBits, width, height, pixFormat, pitch);
 	} else {
 		ofLogError("ofImage") << "putBmpIntoPixels(): unable to set ofPixels from FIBITMAP";
 	}
 	
-	if(bmpConverted != NULL) {
+	if(bmpConverted != nullptr) {
 		FreeImage_Unload(bmpConverted);
 	}
 
@@ -173,15 +172,13 @@ static bool loadImage(ofPixels_<PixelType> & pix, string fileName){
 	ofInitFreeImage();
 
 #ifndef TARGET_EMSCRIPTEN
-	// Attempt to parse the fileName as a url - specifically it must be a full address starting with http/https
-	// Poco::URI normalizes to lowercase
 	Poco::URI uri;
-    try {
-        uri = Poco::URI(fileName);
-    } catch(const Poco::SyntaxException& exc){
-        ofLogError("ofImage") << "loadImage(): malformed url when loading image from url \"" << fileName << "\": " << exc.displayText();
+	try {
+		uri = Poco::URI(fileName);
+	} catch(const std::exception & exc){
+		ofLogError("ofImage") << "loadImage(): malformed uri when loading image from uri \"" << fileName << "\": " << exc.what();
 		return false;
-    }
+	}
 	if(uri.getScheme() == "http" || uri.getScheme() == "https"){
 		return ofLoadImage(pix, ofLoadURL(fileName).data);
 	}
@@ -189,7 +186,7 @@ static bool loadImage(ofPixels_<PixelType> & pix, string fileName){
 	
 	fileName = ofToDataPath(fileName);
 	bool bLoaded = false;
-	FIBITMAP * bmp = NULL;
+	FIBITMAP * bmp = nullptr;
 
 	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
 	fif = FreeImage_GetFileType(fileName.c_str(), 0);
@@ -200,7 +197,7 @@ static bool loadImage(ofPixels_<PixelType> & pix, string fileName){
 	if((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
 		bmp = FreeImage_Load(fif, fileName.c_str(), 0);
 
-		if (bmp != NULL){
+		if (bmp != nullptr){
 			bLoaded = true;
 		}
 	}
@@ -211,7 +208,7 @@ static bool loadImage(ofPixels_<PixelType> & pix, string fileName){
 		putBmpIntoPixels(bmp,pix);
 	}
 
-	if (bmp != NULL){
+	if (bmp != nullptr){
 		FreeImage_Unload(bmp);
 	}
 
@@ -222,11 +219,11 @@ template<typename PixelType>
 static bool loadImage(ofPixels_<PixelType> & pix, const ofBuffer & buffer){
 	ofInitFreeImage();
 	bool bLoaded = false;
-	FIBITMAP* bmp = NULL;
-	FIMEMORY* hmem = NULL;
+	FIBITMAP* bmp = nullptr;
+	FIMEMORY* hmem = nullptr;
 	
 	hmem = FreeImage_OpenMemory((unsigned char*) buffer.getData(), buffer.size());
-	if (hmem == NULL){
+	if (hmem == nullptr){
 		ofLogError("ofImage") << "loadImage(): couldn't load image from ofBuffer, opening FreeImage memory failed";
 		return false;
 	}
@@ -243,7 +240,7 @@ static bool loadImage(ofPixels_<PixelType> & pix, const ofBuffer & buffer){
 	//make the image!!
 	bmp = FreeImage_LoadFromMemory(fif, hmem, 0);
 	
-	if( bmp != NULL ){
+	if( bmp != nullptr ){
 		bLoaded = true;
 	}
 	
@@ -253,11 +250,11 @@ static bool loadImage(ofPixels_<PixelType> & pix, const ofBuffer & buffer){
 		putBmpIntoPixels(bmp,pix);
 	}
 
-	if (bmp != NULL){
+	if (bmp != nullptr){
 		FreeImage_Unload(bmp);
 	}
 	
-	if( hmem != NULL ){
+	if( hmem != nullptr ){
 		FreeImage_CloseMemory(hmem);
 	}
 
@@ -376,7 +373,7 @@ static void saveImage(ofPixels_<PixelType> & pix, string fileName, ofImageQualit
 					convertedBmp = FreeImage_ColorQuantize(bmp, FIQ_NNQUANT);
 				}
 				FreeImage_Save(fif, convertedBmp, fileName.c_str());
-				if (convertedBmp != NULL){
+				if (convertedBmp != nullptr){
 					FreeImage_Unload(convertedBmp);
 				}
 			} else {
@@ -385,7 +382,7 @@ static void saveImage(ofPixels_<PixelType> & pix, string fileName, ofImageQualit
 		}
 	}
 
-	if (bmp != NULL){
+	if (bmp != nullptr){
 		FreeImage_Unload(bmp);
 	}
 }
@@ -475,7 +472,7 @@ static void saveImage(ofPixels_<PixelType> & pix, ofBuffer & buffer, ofImageForm
 		   // Save compressed data on mem_buffer
 		   // note: FreeImage_AquireMemory allocates space for aux_mem_buffer):
 		   //
-		   unsigned char *mem_buffer = NULL;
+		   unsigned char *mem_buffer = nullptr;
 		   if (!FreeImage_AcquireMemory(hmem, &mem_buffer, &size_in_bytes))
 				   ofLogError("ofImage") << "saveImage(): couldn't save to ofBuffer, aquiring compressed image from memory failed";
 
@@ -623,7 +620,7 @@ bool ofImage_<PixelType>::loadImage(const ofFile & file){
 
 //----------------------------------------------------------
 template<typename PixelType>
-bool ofImage_<PixelType>::load(string fileName){
+bool ofImage_<PixelType>::load(const string& fileName){
 	#if defined(TARGET_ANDROID)
 	ofAddListener(ofxAndroidEvents().unloadGL,this,&ofImage_<PixelType>::unloadTexture);
 	ofAddListener(ofxAndroidEvents().reloadGL,this,&ofImage_<PixelType>::update);
@@ -802,6 +799,12 @@ void ofImage_<PixelType>::allocate(int w, int h, ofImageType newType){
 
 //------------------------------------
 template<typename PixelType>
+bool ofImage_<PixelType>::bAllocated(){
+    return pixels.isAllocated();
+}
+
+//------------------------------------
+template<typename PixelType>
 void ofImage_<PixelType>::clear(){
 #if defined(TARGET_ANDROID)
 	ofRemoveListener(ofxAndroidEvents().unloadGL,this,&ofImage_<PixelType>::unloadTexture);
@@ -951,8 +954,8 @@ void ofImage_<PixelType>::update(){
 	bpp = pixels.getBitsPerPixel();
 	type = pixels.getImageType();
 	if (pixels.isAllocated() && bUseTexture){
-		int glTypeInternal = ofGetGlInternalFormat(pixels);
-		if(!tex.isAllocated() || tex.getWidth() != width || tex.getHeight() != height || tex.getTextureData().glTypeInternal != glTypeInternal){
+		int glInternalFormat = ofGetGlInternalFormat(pixels);
+		if(!tex.isAllocated() || tex.getWidth() != width || tex.getHeight() != height || tex.getTextureData().glInternalFormat != glInternalFormat){
 			tex.allocate(pixels);
 			if(ofIsGLProgrammableRenderer() && (pixels.getPixelFormat()==OF_PIXELS_GRAY || pixels.getPixelFormat()==OF_PIXELS_GRAY_ALPHA)){
 				tex.setRGToRGBASwizzles(true);
@@ -987,14 +990,29 @@ void ofImage_<unsigned char>::grabScreen(int x, int y, int w, int h){
 
 //------------------------------------
 template<typename PixelType>
-void ofImage_<PixelType>::grabScreen(int x, int y, int w, int h){
+void ofGrabScreen(ofPixels_<PixelType> & pixels, int x, int y, int w, int h){
 	ofPixels p;
 	shared_ptr<ofBaseGLRenderer> renderer = ofGetGLRenderer();
 	if(renderer){
 		renderer->saveScreen(x,y,w,h,p);
 		pixels = p;
-		update();
 	}
+}
+
+//------------------------------------
+template<>
+void ofGrabScreen(ofPixels & p, int x, int y, int w, int h){
+	shared_ptr<ofBaseGLRenderer> renderer = ofGetGLRenderer();
+	if(renderer){
+		renderer->saveScreen(x,y,w,h,p);
+	}
+}
+
+//------------------------------------
+template<typename PixelType>
+void ofImage_<PixelType>::grabScreen(int x, int y, int w, int h){
+	ofGrabScreen(pixels,x,y,w,h);
+	update();
 }
 
 //------------------------------------
@@ -1002,6 +1020,12 @@ template<typename PixelType>
 void ofImage_<PixelType>::setImageType(ofImageType newType){
 	changeTypeOfPixels(pixels, newType);
 	update();
+}
+
+//------------------------------------
+template<typename PixelType>
+ofImageType ofImage_<PixelType>::getImageType() const{
+	return type;
 }
 
 //------------------------------------
@@ -1064,13 +1088,13 @@ template<typename PixelType>
 void ofImage_<PixelType>::resizePixels(ofPixels_<PixelType> &pix, int newWidth, int newHeight){
 
 	FIBITMAP * bmp					= getBmpFromPixels(pix);
-	FIBITMAP * convertedBmp			= NULL;
+	FIBITMAP * convertedBmp			= nullptr;
 
 	convertedBmp = FreeImage_Rescale(bmp, newWidth, newHeight, FILTER_BICUBIC);
 	putBmpIntoPixels(convertedBmp, pix, false);
 
-	if (bmp != NULL)				FreeImage_Unload(bmp);
-	if (convertedBmp != NULL)		FreeImage_Unload(convertedBmp);
+	if (bmp != nullptr)				FreeImage_Unload(bmp);
+	if (convertedBmp != nullptr)		FreeImage_Unload(convertedBmp);
 }
 
 //----------------------------------------------------
@@ -1083,7 +1107,7 @@ void ofImage_<PixelType>::changeTypeOfPixels(ofPixels_<PixelType> &pix, ofImageT
 	}
 
 	FIBITMAP * bmp = getBmpFromPixels(pix);
-	FIBITMAP * convertedBmp = NULL;
+	FIBITMAP * convertedBmp = nullptr;
 
 	switch (newType){
 		case OF_IMAGE_GRAYSCALE:
@@ -1102,10 +1126,10 @@ void ofImage_<PixelType>::changeTypeOfPixels(ofPixels_<PixelType> &pix, ofImageT
 	
 	putBmpIntoPixels(convertedBmp, pix, false);
 
-	if (bmp != NULL) {
+	if (bmp != nullptr) {
 		FreeImage_Unload(bmp);
 	}
-	if (convertedBmp != NULL) {
+	if (convertedBmp != nullptr) {
 		FreeImage_Unload(convertedBmp);
 	}
 }

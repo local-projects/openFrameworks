@@ -116,7 +116,45 @@ PLATFORM_REQUIRED_ADDONS =
 ################################################################################
 
 # Code Generation Option Flags (http://gcc.gnu.org/onlinedocs/gcc/Code-Gen-Options.html)
-PLATFORM_CFLAGS = -Wall -std=c++0x
+# find out version of gcc:
+# < 4.7.x  c++0x
+# >= 4.7.x c++11
+# >= 4.9.x c++14
+# other compilers c++11 by now
+ifeq ($(CXX),g++)
+	GCC_MAJOR_EQ_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \= 4)
+	GCC_MAJOR_GT_4 := $(shell expr `gcc -dumpversion | cut -f1 -d.` \> 4)
+	GCC_MINOR_GTEQ_7 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \<= 7)
+	GCC_MINOR_GTEQ_9 := $(shell expr `gcc -dumpversion | cut -f2 -d.` \>= 9)
+	ifeq ("$(GCC_MAJOR_EQ_4)","1")
+		ifeq ("$(GCC_MINOR_GTEQ_7)","1")
+			PLATFORM_CFLAGS = -Wall -std=c++0x -DHAS_TLS=0
+		else
+			ifeq ("$(GCC_MINOR_GTEQ_9)","1")
+				PLATFORM_CFLAGS = -Wall -std=c++14 -DGCC_HAS_REGEX
+			else
+				PLATFORM_CFLAGS = -Wall -std=c++11
+			endif
+		endif
+	endif
+	ifeq ("$(GCC_MAJOR_GT_4)","1")
+		PLATFORM_CFLAGS = -Wall -std=c++14 -D_GLIBCXX_USE_CXX11_ABI=0
+	endif
+else
+	ifeq ($(CXX),g++-5)
+		PLATFORM_CFLAGS = -Wall -std=c++14 -D_GLIBCXX_USE_CXX11_ABI=0 -DGCC_HAS_REGEX
+	else
+	    ifeq ($(CXX),g++-4.9)
+		    PLATFORM_CFLAGS = -Wall -std=c++14 -DGCC_HAS_REGEX
+	    else
+	        ifeq ($(CXX),g++-4.8)
+		        PLATFORM_CFLAGS = -Wall -std=c++11
+	        else
+	            PLATFORM_CFLAGS = -Wall -std=c++11
+	        endif
+	    endif
+	endif
+endif
 
 
 ################################################################################
@@ -147,11 +185,23 @@ PLATFORM_LDFLAGS = -Wl,-rpath=./libs:./bin/libs -Wl,--as-needed -Wl,--gc-section
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
 
-# RELEASE Debugging options (http://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html)
-PLATFORM_OPTIMIZATION_CFLAGS_RELEASE = -O3
+ifndef PROJECT_OPTIMIZATION_CFLAGS_RELEASE
+	# RELEASE Debugging options (http://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html)
+	PLATFORM_OPTIMIZATION_CFLAGS_RELEASE = -O3
+	
+	ifneq ($(LINUX_ARM),1)
+		PLATFORM_OPTIMIZATION_CFLAGS_RELEASE += -march=native -mtune=native
+	endif
+else
+	PLATFORM_OPTIMIZATION_CFLAGS_RELEASE = $(PROJECT_OPTIMIZATION_CFLAGS_RELEASE)
+endif
 
-# DEBUG Debugging options (http://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html)
-PLATFORM_OPTIMIZATION_CFLAGS_DEBUG = -g3
+ifndef PROJECT_OPTIMIZATION_CFLAGS_DEBUG
+	# DEBUG Debugging options (http://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html)
+	PLATFORM_OPTIMIZATION_CFLAGS_DEBUG = -g3
+else
+	PLATFORM_OPTIMIZATION_CFLAGS_DEBUG = $(PROJECT_OPTIMIZATION_CFLAGS_DEBUG)
+endif
 
 ################################################################################
 # PLATFORM CORE EXCLUSIONS
@@ -202,6 +252,7 @@ PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/assimp/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/glut/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/rtAudio/%
 PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/openssl/%
+PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/boost/%
 
 ifeq ($(USE_FMOD),0)
 	PLATFORM_CORE_EXCLUSIONS += $(OF_LIBS_PATH)/fmodex/%
@@ -261,12 +312,18 @@ endif
     
 PLATFORM_LIBRARIES += freeimage
 PLATFORM_LIBRARIES += rtaudio
+PLATFORM_LIBRARIES += boost_filesystem
+PLATFORM_LIBRARIES += boost_system
 
 #static libraries (fully qualified paths)
 PLATFORM_STATIC_LIBRARIES =
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoNetSSL.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoNet.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoCrypto.a
+PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoJSON.a
+#PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoMongoDB.a
+#PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoDataSQLite.a
+#PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoData.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoUtil.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoXML.a
 PLATFORM_STATIC_LIBRARIES += $(OF_LIBS_PATH)/poco/lib/$(ABI_LIB_SUBPATH)/libPocoFoundation.a

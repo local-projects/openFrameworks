@@ -3,29 +3,6 @@
 #include "ofConstants.h"
 #include "ofColor.h"
 
-#if (_MSC_VER) \
-	|| ((defined(TARGET_EMSCRIPTEN) \
-	|| defined(TARGET_OF_IOS) \
-	|| defined(TARGET_LINUX) \
-	|| defined(TARGET_OSX) \
-) && __cplusplus>=201103L)
-#include <memory>
-#else
-#include <tr1/memory>
-// import smart pointers utils into std
-namespace std {
-#if __cplusplus<201103L
-	using std::tr1::shared_ptr;
-	using std::tr1::weak_ptr;
-	using std::tr1::enable_shared_from_this;
-#endif
-	using std::tr1::static_pointer_cast;
-	using std::tr1::dynamic_pointer_cast;
-	using std::tr1::const_pointer_cast;
-	using std::tr1::__dynamic_cast_tag;
-}
-#endif
-
 class ofSerial;
 
 /// \brief Describes a Serial device, including ID, name and path.
@@ -91,14 +68,13 @@ class ofSerialDeviceInfo{
 		/// \endcond
 };
 
-
 //----------------------------------------------------------
 // ofMutex
 //----------------------------------------------------------
 
-#include "Poco/Mutex.h"
-
+#include <mutex>
 /// \brief A typedef for a cross-platform mutex.
+/// \deprecated Please use std::mutex instead of ofMutex. See also the note below.
 ///
 /// A mutex is used to lock data when it is accessible from multiple threads.
 /// Locking data with a mutex prevents data-races, deadlocks and other problems
@@ -123,15 +99,16 @@ class ofSerialDeviceInfo{
 ///
 /// ~~~~
 ///
-/// \warning Currently ofMutex is a typedef for Poco::FastMutex a fast cross-
-/// platform mutex. In a future version of OF, Poco::FastMutex will be replaced
-/// by std::mutex.
+/// \note Currently ofMutex is a typedef for std::mutex. This is done
+/// to preserve backwards compatibility. Please use std::mutex for new
+/// code.
 ///
 /// \sa http://www.cplusplus.com/reference/mutex/mutex/
-/// \sa http://www.appinf.com/docs/poco/Poco.FastMutex.html
-typedef Poco::FastMutex ofMutex;
+/// \sa ofScopedLock
+typedef std::mutex ofMutex;
 
 /// \brief A typedef for a cross-platform scoped mutex.
+/// \deprecated Please use std::unique_lock<std::mutex> instead of ofScopedLock. See also the note below.
 ///
 /// Normally ofMutex requres explicit calls to ofMutex::lock() and
 /// ofMutex::unlock() to lock and release the mutex. Sometimes, despite best
@@ -160,14 +137,13 @@ typedef Poco::FastMutex ofMutex;
 ///
 /// ~~~~
 ///
-/// \warning Currently ofScopedLock is a typedef for Poco::FastMutex::ScopedLock
-/// a convenient wrapper fo Poco::FastMutex.  In a future version of OF,
-/// Poco::FastMutex::ScopedLock by std::lock_guard.
+/// \warning Currently ofScopedLock is a typedef for std::unique_lock<std::mutex>.
+/// This is done to preserve backwards compatibility. Please use
+/// std::unique_lock<std::mutex> for new code.
 ///
-/// \sa http://en.cppreference.com/w/cpp/thread/lock_guard
-/// \sa http://www.appinf.com/docs/poco/Poco.ScopedLock.html
+/// \sa http://en.cppreference.com/w/cpp/thread/unique_lock
 /// \sa ofMutex
-typedef Poco::FastMutex::ScopedLock ofScopedLock;
+typedef std::unique_lock<std::mutex> ofScopedLock;
 
 /// \brief Contains general information about the style of ofGraphics
 /// elements such as color, line width and others.
@@ -306,79 +282,38 @@ public:
 //----------------------------------------------------------
 // ofPtr
 //----------------------------------------------------------
-#if __cplusplus >= 201103L
 template <typename T>
 using ofPtr = std::shared_ptr<T>;
-#else
-template <typename T>
-class ofPtr: public std::shared_ptr<T>
-{
 
-public:
 
-	OF_DEPRECATED_MSG("Use std::shared_ptr instead",ofPtr());
+// This is a helper method for make unique on platforms that support C++11, but not C++14.
+#if !defined(NO_OF_MAKE_UNIQUE) && (defined(_MSC_VER) && _MSC_VER < 1800) || (!defined(_MSC_VER) && __cplusplus <= 201103L)
 
-	  template<typename Tp1>
-		explicit
-		OF_DEPRECATED_MSG("Use std::shared_ptr instead",ofPtr(Tp1* __p));
+// Implementation for C++11 platforms that do not yet have std::make_unique.
+// Implementation from http://stackoverflow.com/a/13512344/1518329
+namespace std {
 
-	  template<typename Tp1, typename _Deleter>
-		ofPtr(Tp1* __p, _Deleter __d)
-	: std::shared_ptr<T>(__p, __d) { }
 
-	  template<typename Tp1, typename _Deleter, typename _Alloc>
-		ofPtr(Tp1* __p, _Deleter __d, const _Alloc& __a)
-	: std::shared_ptr<T>(__p, __d, __a) { }
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique_helper(std::false_type, Args&&... args) {
+	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
 
-	  // Aliasing constructor
-	  template<typename Tp1>
-		ofPtr(const ofPtr<Tp1>& __r, T* __p)
-	: std::shared_ptr<T>(__r, __p) { }
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args) {
+	static_assert(std::extent<T>::value == 0,
+				  "make_unique<T[N]>() is forbidden, please use make_unique<T[]>().");
 
-	  template<typename Tp1>
-		ofPtr(const ofPtr<Tp1>& __r)
-	: std::shared_ptr<T>(__r) { }
+	typedef typename std::remove_extent<T>::type U;
+	return std::unique_ptr<T>(new U[sizeof...(Args)]{std::forward<Args>(args)...});
+}
 
-	  template<typename Tp1>
-		ofPtr(const std::shared_ptr<Tp1>& __r)
-	: std::shared_ptr<T>(__r) { }
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+	return make_unique_helper<T>(std::is_array<T>(), std::forward<Args>(args)...);
+}
 
-	  template<typename Tp1>
-		explicit
-		ofPtr(const std::weak_ptr<Tp1>& __r)
-	: std::shared_ptr<T>(__r) { }
 
-	// tgfrerer: extends ofPtr facade to allow dynamic_pointer_cast, pt.1
-#if (_MSC_VER)
-	template<typename Tp1>
-	ofPtr(const ofPtr<Tp1>& __r, std::_Dynamic_tag)
-	: std::shared_ptr<T>(__r, std:::_Dynamic_tag()) { }
-#elif !defined(TARGET_EMSCRIPTEN) && !defined(TARGET_LINUX) && !defined(TARGET_OF_IOS)
-	template<typename Tp1>
-	ofPtr(const ofPtr<Tp1>& __r, std::__dynamic_cast_tag)
-	: std::shared_ptr<T>(__r, std::__dynamic_cast_tag()) { }
-#endif
-};
+} // namespace std
 
-template<typename T>
-ofPtr<T>::ofPtr()
-: std::shared_ptr<T>() { }
-
-template<typename T>
-template<typename Tp1>
-ofPtr<T>::ofPtr(Tp1* __p)
-: std::shared_ptr<T>(__p) { }
-
-// tgfrerer: extends ofPtr facade to allow dynamic_pointer_cast, pt. 2
-#if (_MSC_VER)
-template<typename _Tp, typename _Tp1>
-ofPtr<_Tp>
-	dynamic_pointer_cast(const ofPtr<_Tp1>& __r)
-{ return ofPtr<_Tp>(__r, std::_Dynamic_tag()); }
-#elif !defined(TARGET_EMSCRIPTEN) && !defined(TARGET_LINUX) && !defined(TARGET_OF_IOS)
-template<typename _Tp, typename _Tp1>
-ofPtr<_Tp>
-	dynamic_pointer_cast(const ofPtr<_Tp1>& __r)
-{ return ofPtr<_Tp>(__r, std::__dynamic_cast_tag()); }
-#endif
 #endif

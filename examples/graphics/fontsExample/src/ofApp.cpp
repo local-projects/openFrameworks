@@ -39,7 +39,6 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	
 	ofSetColor(225);
 	verdana14.drawString("Font Example - use keyboard to type", 30, 35);
 
@@ -134,7 +133,7 @@ void ofApp::keyPressed(int key){
 			typeStr.clear();
 			bFirst = false;
 		}
-		typeStr.append(1, (char)key);
+		ofAppendUTF8(typeStr,key);
 	}
 }
 

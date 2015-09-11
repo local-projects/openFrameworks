@@ -300,19 +300,13 @@ public:
 	/// \{
 
 	/// \brief Get an ofPolyline representing the outline of the ofPath.
-	vector<ofPolyline> & getOutline();
 	const vector<ofPolyline> & getOutline() const;
 
 	void tessellate();
 
-	ofMesh & getTessellation();
 	const ofMesh & getTessellation() const;
 
-	void simplify(float tolerance=0.3);
-
-	// only needs to be called when path is modified externally
-	void flagShapeChanged();
-	bool hasChanged();
+	void simplify(float tolerance=0.3f);
 
 	void translate(const ofPoint & p);
 	void rotate(float az, const ofVec3f& axis );
@@ -380,6 +374,10 @@ private:
 	void addCommand(const Command & command);
 	void generatePolylinesFromCommands();
 
+	// only needs to be called when path is modified externally
+	void flagShapeChanged();
+	bool hasChanged();
+
 	// path description
 	//vector<ofSubPath>		paths;
 	vector<Command> 	commands;
@@ -400,9 +398,13 @@ private:
 	ofVboMesh			cachedTessellation;
 #endif
 	bool				cachedTessellationValid;
-
+#if defined(TARGET_EMSCRIPTEN)
+	static ofTessellator tessellator;
+#elif HAS_TLS
+	static thread_local ofTessellator tessellator;
+#else
 	ofTessellator tessellator;
-
+#endif
 	bool				bHasChanged;
 	int					prevCurveRes;
 	int					curveResolution;

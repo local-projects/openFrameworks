@@ -222,7 +222,7 @@ class ofCoreEvents {
 	float getFrameRate() const;
 	float getTargetFrameRate() const;
 	double getLastFrameTime() const;
-	int getFrameNum() const;
+	uint64_t getFrameNum() const;
 
 	bool getMousePressed(int button=-1) const;
 	bool getKeyPressed(int key=-1) const;
@@ -316,7 +316,7 @@ void ofUnregisterMouseEvents(ListenerClass * listener, int prio=OF_EVENT_ORDER_A
 	ofRemoveListener(ofEvents().mouseReleased,listener,&ListenerClass::mouseReleased,prio);
 	ofRemoveListener(ofEvents().mouseScrolled,listener,&ListenerClass::mouseScrolled,prio);
 	ofRemoveListener(ofEvents().mouseEntered,listener,&ListenerClass::mouseEntered,prio);
-	ofRemoveListener(ofEvents().mouseEntered,listener,&ListenerClass::mouseExited,prio);
+	ofRemoveListener(ofEvents().mouseExited,listener,&ListenerClass::mouseExited,prio);
 }
 
 template<class ListenerClass>

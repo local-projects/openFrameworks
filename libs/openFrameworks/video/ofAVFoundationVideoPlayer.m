@@ -8,48 +8,60 @@
 
 #define IS_OS_6_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 6.0)
 
+
+
 static NSString * const kTracksKey = @"tracks";
-static NSString * const kPlayableKey = @"playable";
 static NSString * const kStatusKey = @"status";
 static NSString * const kRateKey = @"rate";
-static NSString * const kCurrentItemKey = @"currentItem";
 
 //---------------------------------------------------------- video player.
 @implementation ofAVFoundationVideoPlayer
 
-@synthesize delegate;
-@synthesize playerView = _playerView;
 @synthesize player = _player;
-@synthesize playerItem = _playerItem;
 @synthesize asset = _asset;
+@synthesize playerItem = _playerItem;
+
 @synthesize assetReader = _assetReader;
 @synthesize assetReaderVideoTrackOutput = _assetReaderVideoTrackOutput;
 @synthesize assetReaderAudioTrackOutput = _assetReaderAudioTrackOutput;
+#if USE_VIDEO_OUTPUT
+@synthesize videoOutput = _videoOutput;
+#endif
+
 
 static const NSString * ItemStatusContext;
+
 
 - (id)init {
 	self = [super init];
 	if(self) {
 		
-		self.playerView = [[[ofAVFoundationVideoPlayerView alloc] initVideoPlayerView] autorelease];
-		
+		// create avplayer
 		self.player = [[[AVPlayer alloc] init] autorelease];
-		[(ofAVFoundationVideoPlayerView *)self.playerView setPlayer:_player];
 		
 		[_player addObserver:self
 				  forKeyPath:kRateKey
 					 options:NSKeyValueObservingOptionNew
 					 context:nil];
 		
+		
+#if USE_VIDEO_OUTPUT
+		// create videooutput queue
+		_myVideoOutputQueue = dispatch_queue_create(NULL, NULL);
+		
+		// create videooutput
+		[self createVideoOutput];
+		
+		_videoInfo = nil;
+#endif
+	
+		
 		timeObserver = nil;
-		timeObserverFps = 30;
 		
 		videoSampleBuffer = nil;
 		audioSampleBuffer = nil;
-		videoSampleTime = kCMTimeZero;
-		videoSampleTimePrev = kCMTimeZero;
-		audioSampleTime = kCMTimeZero;
+		videoSampleTime = kCMTimeNegativeInfinity;//kCMTimeZero;
+		audioSampleTime = kCMTimeNegativeInfinity;//kCMTimeZero;
 		synchSampleTime = kCMTimeInvalid;
 		duration = kCMTimeZero;
 		currentTime = kCMTimeZero;
@@ -67,37 +79,47 @@ static const NSString * ItemStatusContext;
 		bUpdateFirstFrame = YES;
 		bNewFrame = NO;
 		bPlaying = NO;
+		bWasPlayingBackwards  = NO;
 		bFinished = NO;
 		bAutoPlayOnLoad = NO;
-		bLoop = NO;
+		loop = LOOP_NONE;
 		bSeeking = NO;
 		bSampleVideo = YES;
-		bSampleAudio = YES;
+		
+		// do not sample audio by default
+		// we are lacking interfaces for audiodata
+		bSampleAudio = NO;
 	}
 	return self;
 }
 
+#if USE_VIDEO_OUTPUT
+- (void)createVideoOutput {
+#ifdef TARGET_IOS
+	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)};
+#elif defined(TARGET_OSX)
+	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32ARGB)};
+#endif
+	
+	self.videoOutput = [[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:pixBuffAttributes];
+	if (!self.videoOutput) {
+		NSLog(@"error creating video output");
+		return;
+	}
+	
+	self.videoOutput.suppressesPlayerRendering = YES;
+	[self.videoOutput setDelegate:self queue:_myVideoOutputQueue];
+}
+#endif
+
+
 //---------------------------------------------------------- cleanup / dispose.
 - (void)dealloc
-{	
-	if(self.playerView != nil) {
-		[(ofAVFoundationVideoPlayerView *)self.playerView setPlayer:nil];
-		[self.playerView removeFromSuperview];
-		self.playerView = nil;
-	}
+{
+	// unload current video
+	[self unloadVideo];
 	
-	if(self.playerItem != nil) {
-		NSNotificationCenter * notificationCenter = [NSNotificationCenter defaultCenter];
-		[notificationCenter removeObserver:self
-									  name:AVPlayerItemDidPlayToEndTimeNotification
-									object:self.playerItem];
-		[self.playerItem removeObserver:self forKeyPath:kStatusKey];
-		
-		self.playerItem = nil;
-	}
-	
-	[self removeTimeObserverFromPlayer];
-	
+	// destroy player
 	if(self.player != nil) {
 		[_player removeObserver:self forKeyPath:kRateKey];
 		
@@ -105,37 +127,18 @@ static const NSString * ItemStatusContext;
 		[_player release];
 	}
 	
-	if(self.assetReader != nil) {
-		[self.assetReader cancelReading];
-		self.assetReader = nil;
+#if USE_VIDEO_OUTPUT
+	if (self.videoOutput != nil) {
+		self.videoOutput = nil;
 	}
 	
-	self.assetReaderVideoTrackOutput = nil;
-	self.assetReaderAudioTrackOutput = nil;
-	self.asset = nil;
-	
-	if(videoSampleBuffer != nil) {
-		CFRelease(videoSampleBuffer);
-		videoSampleBuffer = nil;
-	}
-	
-	if(audioSampleBuffer != nil) {
-		CFRelease(audioSampleBuffer);
-		audioSampleBuffer = nil;
-	}
+	dispatch_release(_myVideoOutputQueue);
+#endif
 	
 	[super dealloc];
 }
 
 
-//---------------------------------------------------------- position / size.
-- (void)setVideoPosition:(CGPoint)position {
-	[self.playerView setVideoPosition:position];
-}
-
-- (void)setVideoSize:(CGSize)size {
-	[self.playerView setVideoSize:size];
-}
 
 //---------------------------------------------------------- load / unload.
 - (BOOL)loadWithFile:(NSString*)file async:(BOOL)bAsync{
@@ -155,7 +158,9 @@ static const NSString * ItemStatusContext;
 	
 	[self unloadVideo];     // unload video if one is already loaded.
 	
-	self.asset = [AVURLAsset URLAssetWithURL:url options:nil];
+	NSDictionary *options = @{(id)AVURLAssetPreferPreciseDurationAndTimingKey:@(YES)};
+	self.asset = [AVURLAsset URLAssetWithURL:url options:options];
+	
 	if(self.asset == nil) {
 		NSLog(@"error loading asset: %@", [url description]);
 		return NO;
@@ -192,6 +197,9 @@ static const NSString * ItemStatusContext;
 				return;
 			}
 			
+			// TODO
+			// why not reading infinite media?
+			// how about playing back HLS streams?
 			if(isfinite([self getDurationInSec]) == NO) {
 				NSLog(@"track loaded with infinite duration.");
 				if(bAsync == NO){
@@ -218,34 +226,62 @@ static const NSString * ItemStatusContext;
 				return;
 			}
 			
-			AVAssetTrack * track = [videoTracks objectAtIndex:0];
-			frameRate = track.nominalFrameRate;
-			videoWidth = [track naturalSize].width;
-			videoHeight = [track naturalSize].height;
+			AVAssetTrack * videoTrack = [videoTracks objectAtIndex:0];
+			frameRate = videoTrack.nominalFrameRate;
+			videoWidth = [videoTrack naturalSize].width;
+			videoHeight = [videoTrack naturalSize].height;
 			
-			NSLog(@"video loaded at %i x %i", videoWidth, videoHeight);
+			NSLog(@"video loaded at %li x %li @ %f fps", (long)videoWidth, (long)videoHeight, frameRate);
 			
-			[self setVideoSize:CGSizeMake(videoWidth, videoHeight)];
+			currentTime = CMTimeMakeWithSeconds((1.0/frameRate), NSEC_PER_SEC);//kCMTimeZero;
+			
 			
 			//------------------------------------------------------------ create player item.
 			self.playerItem = [AVPlayerItem playerItemWithAsset:self.asset];
 			
-			[self.playerItem addObserver:self
-							  forKeyPath:kStatusKey
-								 options:0
-								 context:&ItemStatusContext];
-			
-			NSNotificationCenter * notificationCenter = [NSNotificationCenter defaultCenter];
-			[notificationCenter addObserver:self
-								   selector:@selector(playerItemDidReachEnd)
-									   name:AVPlayerItemDidPlayToEndTimeNotification
-									 object:self.playerItem];
-			
-			[_player replaceCurrentItemWithPlayerItem:self.playerItem];
-			
-			[self addTimeObserverToPlayer];
-			
-			bLoaded = true;
+			if (self.playerItem) {
+				
+				[self.playerItem addObserver:self
+								  forKeyPath:kStatusKey
+									 options:0
+									 context:&ItemStatusContext];
+				
+				NSNotificationCenter * notificationCenter = [NSNotificationCenter defaultCenter];
+				[notificationCenter addObserver:self
+									   selector:@selector(playerItemDidReachEnd)
+										   name:AVPlayerItemDidPlayToEndTimeNotification
+										 object:self.playerItem];
+				
+				//AVPlayerItemPlaybackStalledNotification only exists from OS X 10.9 or iOS 6.0 and up
+				#if (__MAC_OS_X_VERSION_MIN_REQUIRED >= 1090) || (__IPHONE_OS_VERSION_MIN_REQUIRED >= 60000)
+				[notificationCenter addObserver:self
+									   selector:@selector(playerItemDidStall)
+										   name:AVPlayerItemPlaybackStalledNotification
+										 object:self.playerItem];
+				#endif 
+				
+#if USE_VIDEO_OUTPUT
+				// safety
+				if (self.videoOutput == nil) {
+					[self createVideoOutput];
+				}
+				
+				// add video output
+				[self.playerItem addOutput:self.videoOutput];
+#endif
+				
+				// set playerItem
+				[_player replaceCurrentItemWithPlayerItem:self.playerItem];
+				
+				// add timeobserver?
+				[self addTimeObserverToPlayer];
+				
+				// loaded
+				bLoaded = true;
+				
+			} else {
+				NSLog(@"could not create AVPlayerItem");
+			}
 			
 			if(bAsync == NO){
 				dispatch_semaphore_signal(sema);
@@ -265,99 +301,129 @@ static const NSString * ItemStatusContext;
 	}
 }
 
+
+#pragma mark - AVPlayerItemOutputPullDelegate
+
+- (void)outputMediaDataWillChange:(AVPlayerItemOutput *)sender
+{
+	NSLog(@"outputMediaDataWillChange");
+}
+
+
 - (BOOL)createAssetReaderWithTimeRange:(CMTimeRange)timeRange {
 	
-	videoSampleTime = videoSampleTimePrev = timeRange.start;
-	audioSampleTime = timeRange.start;
+	videoSampleTime = videoSampleTimePrev = kCMTimeNegativeInfinity;
+	audioSampleTime = kCMTimeNegativeInfinity;
 	
-	NSError *error = nil;
 
+	NSError *error = nil;
+	
 	// safety
 	if (self.assetReader != nil) {
 		[self.assetReader cancelReading];
 		self.assetReader = nil;
 	}
 	
+	// create new asset reader
 	self.assetReader = [AVAssetReader assetReaderWithAsset:self.asset error:&error];
-	
 	if(error) {
 		NSLog(@"assetReader: error during initialisation: %@", [error localizedDescription]);
 		return NO;
 	}
+	
+	// set timerange
 	self.assetReader.timeRange = timeRange;
 	
-	//------------------------------------------------------------ add video output.
-	NSMutableDictionary * videoOutputSettings = [[[NSMutableDictionary alloc] init] autorelease];
-#ifdef TARGET_IOS
-	[videoOutputSettings setObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA]
-							forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
-#elif defined(TARGET_OSX)
-	[videoOutputSettings setObject:[NSNumber numberWithInt:kCVPixelFormatType_32ARGB]
-							forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
-#endif
 	
-	NSArray * videoTracks = [self.asset tracksWithMediaType:AVMediaTypeVideo];
-	if([videoTracks count] > 0) {
-		AVAssetTrack * videoTrack = [videoTracks objectAtIndex:0];
-		self.assetReaderVideoTrackOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:videoTrack
-																					  outputSettings:videoOutputSettings];
+	//------------------------------------------------------------ add video output.
+	if (bSampleVideo) {
+		NSMutableDictionary * videoOutputSettings = [[[NSMutableDictionary alloc] init] autorelease];
+#ifdef TARGET_IOS
+		[videoOutputSettings setObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA]
+								forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
+#elif defined(TARGET_OSX)
+		[videoOutputSettings setObject:[NSNumber numberWithInt:kCVPixelFormatType_32ARGB]
+								forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
+#endif
 		
-		if(self.assetReaderVideoTrackOutput == nil) {
-			NSLog(@"assetReaderVideoTrackOutput failed to load.");
-		}
 		
-		if([self.assetReader canAddOutput:self.assetReaderVideoTrackOutput]) {
-			[self.assetReader addOutput:self.assetReaderVideoTrackOutput];
-		} else {
-			NSLog(@"assetReaderVideoTrackOutput cannot be add to assetReader");
+		NSArray * videoTracks = [self.asset tracksWithMediaType:AVMediaTypeVideo];
+		if([videoTracks count] > 0) {
+			AVAssetTrack * videoTrack = [videoTracks objectAtIndex:0];
+			self.assetReaderVideoTrackOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:videoTrack
+																						  outputSettings:videoOutputSettings];
+			
+			if(self.assetReaderVideoTrackOutput != nil) {
+				
+				// dont copy sample data (might improve performance)
+				self.assetReaderVideoTrackOutput.alwaysCopiesSampleData = NO;
+			
+				if([self.assetReader canAddOutput:self.assetReaderVideoTrackOutput]) {
+					[self.assetReader addOutput:self.assetReaderVideoTrackOutput];
+				} else {
+					NSLog(@"assetReaderVideoTrackOutput cannot be add to assetReader");
+				}
+				
+			} else {
+				NSLog(@"assetReaderVideoTrackOutput failed to load.");
+			}
 		}
 	}
 	
 	//------------------------------------------------------------ add audio output.
-	double preferredHardwareSampleRate = 44100;
+	if (bSampleAudio) {
+		// really?
+		double preferredHardwareSampleRate = 44100;
 #ifdef TARGET_IOS
-	[[AVAudioSession sharedInstance] currentHardwareSampleRate];
+		[[AVAudioSession sharedInstance] currentHardwareSampleRate];
 #endif
-	
-	AudioChannelLayout channelLayout;
-	bzero(&channelLayout, sizeof(channelLayout));
-	channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
-	
-	int numOfChannels = 1;
-	if(channelLayout.mChannelLayoutTag == kAudioChannelLayoutTag_Stereo) {
-		numOfChannels = 2;
-	}
-	
-	NSDictionary * audioOutputSettings = nil;
-	audioOutputSettings = [NSDictionary dictionaryWithObjectsAndKeys:
-						   [NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
-						   [NSNumber numberWithFloat:preferredHardwareSampleRate], AVSampleRateKey,
-#ifdef IS_OS_6_OR_LATER
-						   // including AVNumberOfChannelsKey & AVChannelLayoutKey on iOS5 causes a crash,
-						   // check if iOS6 or greater before including these.
-						   [NSNumber numberWithInt:numOfChannels], AVNumberOfChannelsKey,
-						   [NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)], AVChannelLayoutKey,
-#endif
-						   [NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,
-						   [NSNumber numberWithBool:NO], AVLinearPCMIsNonInterleaved,
-						   [NSNumber numberWithBool:NO], AVLinearPCMIsFloatKey,
-						   [NSNumber numberWithBool:NO], AVLinearPCMIsBigEndianKey,
-						   nil];
-	
-	NSArray * audioTracks = [self.asset tracksWithMediaType:AVMediaTypeAudio];
-	if([audioTracks count] > 0) {
-		AVAssetTrack * audioTrack = [audioTracks objectAtIndex:0];
-		self.assetReaderAudioTrackOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack
-																					  outputSettings:audioOutputSettings];
 		
-		if(self.assetReaderAudioTrackOutput == nil) {
-			NSLog(@"assetReaderAudioTrackOutput failed to load.");
+		AudioChannelLayout channelLayout;
+		bzero(&channelLayout, sizeof(channelLayout));
+		channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+		
+		int numOfChannels = 1;
+		if(channelLayout.mChannelLayoutTag == kAudioChannelLayoutTag_Stereo) {
+			numOfChannels = 2;
 		}
 		
-		if([self.assetReader canAddOutput:self.assetReaderAudioTrackOutput]) {
-			[self.assetReader addOutput:self.assetReaderAudioTrackOutput];
-		} else {
-			NSLog(@"assetReaderAudioTrackOutput cannot be add to assetReader");
+		NSDictionary * audioOutputSettings = nil;
+		audioOutputSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+							   [NSNumber numberWithInt:kAudioFormatLinearPCM], AVFormatIDKey,
+							   [NSNumber numberWithFloat:preferredHardwareSampleRate], AVSampleRateKey,
+#ifdef IS_OS_6_OR_LATER
+							   // including AVNumberOfChannelsKey & AVChannelLayoutKey on iOS5 causes a crash,
+							   // check if iOS6 or greater before including these.
+							   [NSNumber numberWithInt:numOfChannels], AVNumberOfChannelsKey,
+							   [NSData dataWithBytes:&channelLayout length:sizeof(AudioChannelLayout)], AVChannelLayoutKey,
+#endif
+							   [NSNumber numberWithInt:16], AVLinearPCMBitDepthKey,
+							   [NSNumber numberWithBool:NO], AVLinearPCMIsNonInterleaved,
+							   [NSNumber numberWithBool:NO], AVLinearPCMIsFloatKey,
+							   [NSNumber numberWithBool:NO], AVLinearPCMIsBigEndianKey,
+							   nil];
+		
+		NSArray * audioTracks = [self.asset tracksWithMediaType:AVMediaTypeAudio];
+		if([audioTracks count] > 0) {
+			AVAssetTrack * audioTrack = [audioTracks objectAtIndex:0];
+			
+			self.assetReaderAudioTrackOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:audioTrack
+																						  outputSettings:audioOutputSettings];
+			
+			if(self.assetReaderAudioTrackOutput != nil) {
+				
+				// dont copy sample data
+				self.assetReaderAudioTrackOutput.alwaysCopiesSampleData = NO;
+				
+				if([self.assetReader canAddOutput:self.assetReaderAudioTrackOutput]) {
+					[self.assetReader addOutput:self.assetReaderAudioTrackOutput];
+				} else {
+					NSLog(@"assetReaderAudioTrackOutput cannot be add to assetReader");
+				}
+				
+			} else {
+				NSLog(@"assetReaderAudioTrackOutput failed to load.");
+			}
 		}
 	}
 	
@@ -370,6 +436,9 @@ static const NSString * ItemStatusContext;
 	return YES;
 }
 
+
+
+
 - (void)unloadVideo {
 	
 	bReady = NO;
@@ -379,10 +448,10 @@ static const NSString * ItemStatusContext;
 	bNewFrame = NO;
 	bPlaying = NO;
 	bFinished = NO;
+	bWasPlayingBackwards = NO;
 	
-	videoSampleTime = kCMTimeZero;
-	videoSampleTimePrev = kCMTimeZero;
-	audioSampleTime = kCMTimeZero;
+	videoSampleTime = kCMTimeNegativeInfinity;
+	audioSampleTime = kCMTimeNegativeInfinity;
 	synchSampleTime = kCMTimeInvalid;
 	duration = kCMTimeZero;
 	currentTime = kCMTimeZero;
@@ -397,14 +466,17 @@ static const NSString * ItemStatusContext;
 		[notificationCenter removeObserver:self
 									  name:AVPlayerItemDidPlayToEndTimeNotification
 									object:self.playerItem];
+		
+		//AVPlayerItemPlaybackStalledNotification only exists from OS X 10.9 or iOS 6.0 and up
+		#if (__MAC_OS_X_VERSION_MIN_REQUIRED >= 1090) || (__IPHONE_OS_VERSION_MIN_REQUIRED >= 60000)
+		[notificationCenter removeObserver:self
+									  name:AVPlayerItemPlaybackStalledNotification
+									object:self.playerItem];
+		#endif
+		
 		self.playerItem = nil;
 	}
-	
-	[self.assetReader cancelReading];
-	self.assetReader = nil;
-	self.assetReaderVideoTrackOutput = nil;
-	self.assetReaderAudioTrackOutput = nil;
-	self.asset = nil;
+
 	
 	if(videoSampleBuffer) {
 		CFRelease(videoSampleBuffer);
@@ -417,6 +489,13 @@ static const NSString * ItemStatusContext;
 	}
 	
 	[self removeTimeObserverFromPlayer];
+	
+#if USE_VIDEO_OUTPUT
+	// destroy video info
+	if (_videoInfo) {
+		CFRelease(_videoInfo);
+	}
+#endif
 }
 
 //---------------------------------------------------------- player callbacks.
@@ -425,11 +504,10 @@ static const NSString * ItemStatusContext;
 	if(context == &ItemStatusContext) {
 		dispatch_async(dispatch_get_main_queue(), ^{
 			bReady = true;
+			
 			[self update]; // update as soon is ready so pixels are loaded.
 			[self setVolume:volume]; // set volume for current video.
-			if([self.delegate respondsToSelector:@selector(playerReady)]) {
-				[self.delegate playerReady];
-			}
+			
 			if(bAutoPlayOnLoad || bPlayStateBeforeLoad) {
 				[self play];
 			}
@@ -458,20 +536,46 @@ static const NSString * ItemStatusContext;
 }
 
 - (void)playerItemDidReachEnd {
+	
 	bFinished = YES;
 	bPlaying = NO;
-	if([self.delegate respondsToSelector:@selector(playerDidFinishPlayingVideo)]) {
-		[self.delegate playerDidFinishPlayingVideo];
+	
+	if (speed > 0.0) {
+		// playing forward
+		if (loop == LOOP_NORMAL) {
+			[self seekToStart];
+			[self play];
+		} else if (loop == LOOP_PALINDROME) {
+			[self setSpeed:-speed];
+			[self play];
+		}
+		
+	} else if (speed < 0.0) {
+		// playing backwards
+		if (loop == LOOP_NORMAL) {
+			[self seekToEnd];
+			[self play];
+		} else if (loop == LOOP_PALINDROME) {
+			[self setSpeed:-speed];
+			[self play];
+		}
 	}
-	if(bLoop) {
+	
+	
+	if(loop > LOOP_NONE) {
 		bFinished = NO;
-		[self seekToStart];
-		[self play];
 	}
 }
 
+
+- (void)playerItemDidStall {
+	NSLog(@"playerItem did stall - samples did not arrive in time");
+}
+
+
 //---------------------------------------------------------- update.
 - (void)update {
+	
 	/**
 	 *  return if,
 	 *  video is not yet loaded,
@@ -481,6 +585,95 @@ static const NSString * ItemStatusContext;
 		bNewFrame = NO;
 		return;
 	}
+
+#if !USE_VIDEO_OUTPUT
+	[self updateFromAssetReader];
+#else
+	// get new sample
+	if (self.player.rate > 0.0) {
+		// playing forward
+		// pull out frames from assetreader
+		[self updateFromAssetReader];
+		
+	} else {
+		// playing paused or playing backwards
+		// get samples from videooutput
+		[self updateFromVideoOutput];
+		if (bNewFrame) {
+			videoSampleTimePrev = videoSampleTime;
+		}
+	}
+#endif
+}
+
+- (void)updateFromVideoOutput {
+#if USE_VIDEO_OUTPUT
+	OSStatus err = noErr;
+	
+	// get time from player
+	CMTime time = [_player currentTime];
+	
+	if ([self.videoOutput hasNewPixelBufferForItemTime:time]) {
+		
+		bNewFrame = YES;
+		currentTime = time;
+		
+		CVPixelBufferRef buffer = [self.videoOutput copyPixelBufferForItemTime:time itemTimeForDisplay:NULL];
+		
+		// create or update video format description
+		if (!_videoInfo || !CMVideoFormatDescriptionMatchesImageBuffer(_videoInfo, buffer)) {
+			if (_videoInfo) {
+				CFRelease(_videoInfo);
+				_videoInfo = nil;
+			}
+			err = CMVideoFormatDescriptionCreateForImageBuffer(NULL, buffer, &_videoInfo);
+		}
+		if (err) {
+			NSLog(@"Error at CMVideoFormatDescriptionCreateForImageBuffer %ld", (long)err);
+			bNewFrame = NO;
+			return;
+		}
+		
+		// decodeTimeStamp is set to kCMTimeInvalid since we already receive decoded frames
+		CMSampleTimingInfo sampleTimingInfo = {
+			.duration = kCMTimeInvalid,
+			.presentationTimeStamp = time,
+			.decodeTimeStamp = kCMTimeInvalid
+		};
+		
+	
+		// release old buffer.
+		if(videoSampleBuffer) {
+			CFRelease(videoSampleBuffer);
+			videoSampleBuffer = nil;
+		}
+		
+		// create new sampleBuffer
+		err = CMSampleBufferCreateForImageBuffer(kCFAllocatorDefault,
+												 buffer,
+												 true,
+												 NULL,
+												 NULL,
+												 _videoInfo,
+												 &sampleTimingInfo,
+												 &videoSampleBuffer);
+		if (err) {
+			NSLog(@"Error at CMSampleBufferCreateForImageBuffer %ld", (long)err);
+			bNewFrame = NO;
+			return;
+		}
+		
+		videoSampleTime = time;
+		
+		
+	} else {
+		// no new frame for time
+		bNewFrame = NO;
+	}
+#endif
+}
+
+- (void)updateFromAssetReader {
 	
 	/**
 	 *  in most cases we check at what time the video player is up to,
@@ -545,6 +738,37 @@ static const NSString * ItemStatusContext;
 		return;
 	}
 	
+	//---------------------------------------------------------- video buffer.
+	BOOL bCopiedNewSamples = NO;
+	while(bSampleVideo == true &&                                       // video sampling is on.
+		  self.assetReaderVideoTrackOutput != nil &&                    // asset has a video track.
+		  self.assetReader.status == AVAssetReaderStatusReading &&      // asset read is in reading state.
+		  ((CMTimeCompare(videoSampleTime, currentTime) == -1) ))       // timestamp is less then currentTime.
+		   
+	{
+		CMSampleBufferRef videoBufferTemp;
+
+		@try {
+			videoBufferTemp = [self.assetReaderVideoTrackOutput copyNextSampleBuffer];
+		} @catch (NSException * e) {
+			break;
+		}
+		
+		if(videoBufferTemp) {
+			if(videoSampleBuffer) { // release old buffer.
+				CFRelease(videoSampleBuffer);
+				videoSampleBuffer = nil;
+			}
+			videoSampleBuffer = videoBufferTemp; // save reference to new buffer.
+			
+			videoSampleTime = CMSampleBufferGetPresentationTimeStamp(videoSampleBuffer);
+			
+			bCopiedNewSamples = YES;
+		} else {
+			break;
+		}
+	}
+	
 	//---------------------------------------------------------- audio buffer.
 	while(bSampleAudio == true &&                                   // audio sampling is on.
 		  self.assetReaderAudioTrackOutput != nil &&                // asset has a audio track.
@@ -572,47 +796,14 @@ static const NSString * ItemStatusContext;
 		}
 	}
 	
-	//---------------------------------------------------------- video buffer.
-	BOOL bCopiedNewSamples = NO;
-	while(bSampleVideo == true &&                                       // video sampling is on.
-		  self.assetReaderVideoTrackOutput != nil &&                    // asset has a video track.
-		  self.assetReader.status == AVAssetReaderStatusReading &&      // asset read is in reading state.
-		  ((CMTimeCompare(videoSampleTime, currentTime) == -1) ||        // timestamp is less then currentTime.
-		   (CMTimeCompare(videoSampleTime, currentTime) == 0)))           // timestamp is equal currentTime.
-	{
-		CMSampleBufferRef videoBufferTemp;
-		@try {
-			videoBufferTemp = [self.assetReaderVideoTrackOutput copyNextSampleBuffer];
-		} @catch (NSException * e) {
-			break;
-		}
-		
-		if(videoBufferTemp) {
-			if(videoSampleBuffer) { // release old buffer.
-				CFRelease(videoSampleBuffer);
-				videoSampleBuffer = nil;
-			}
-			videoSampleBuffer = videoBufferTemp; // save reference to new buffer.
-			
-			videoSampleTime = CMSampleBufferGetPresentationTimeStamp(videoSampleBuffer);
-			
-			bCopiedNewSamples = YES;
-		} else {
-			break;
-		}
-	}
-	
 	if(bCopiedNewSamples == true) {
 		bNewFrame = CMTimeCompare(videoSampleTime, videoSampleTimePrev) == 1;
 		if(bNewFrame) {
 			videoSampleTimePrev = videoSampleTime;
 		}
-		
-		if([self.delegate respondsToSelector:@selector(playerDidProgress)]) {
-			[self.delegate playerDidProgress];
-		}
 	}
 }
+
 
 - (void)addTimeObserverToPlayer {
 	if(bWillBeUpdatedExternally) {
@@ -623,7 +814,7 @@ static const NSString * ItemStatusContext;
 		return;
 	}
 	
-	double interval = 1.0 / (double)timeObserverFps;
+	double interval = 1.0 / (double)frameRate;
 	
 	__block ofAVFoundationVideoPlayer* refToSelf = self;
 	timeObserver = [[_player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(interval, NSEC_PER_SEC)
@@ -675,9 +866,47 @@ static const NSString * ItemStatusContext;
 	}
 }
 
+- (void)stepByCount:(long)frames
+{
+	if(![self isReady]) {
+		return;
+	}
+	
+#if USE_VIDEO_OUTPUT
+	[_player.currentItem stepByCount:frames];
+#else
+	if (frames < 0) {
+
+		double timeSec = CMTimeGetSeconds(currentTime) - (1.0/frameRate);
+		[self seekToTime:CMTimeMakeWithSeconds(timeSec, NSEC_PER_SEC)];
+		
+	} else if (![self isFinished] && frames > 0) {
+
+		double timeSec = CMTimeGetSeconds(currentTime) + (1.0/frameRate);
+		CMTime time = CMTimeMakeWithSeconds(timeSec, NSEC_PER_SEC);
+		
+		bSeeking = YES;
+		time = CMTimeMaximum(time, kCMTimeZero);
+		time = CMTimeMinimum(time, duration);
+		
+		// frames are preloaded, only seek player
+		[_player seekToTime:time
+			toleranceBefore:kCMTimePositiveInfinity
+			 toleranceAfter:kCMTimePositiveInfinity
+		  completionHandler:^(BOOL finished) {
+			  bSeeking = NO;
+		  }];
+	}
+#endif
+}
+
 //---------------------------------------------------------- seek.
 - (void)seekToStart {
 	[self seekToTime:kCMTimeZero withTolerance:kCMTimeZero];
+}
+
+- (void)seekToEnd {
+	[self seekToTime:duration withTolerance:kCMTimeZero];
 }
 
 - (void)seekToTime:(CMTime)time {
@@ -688,6 +917,7 @@ static const NSString * ItemStatusContext;
 	 withTolerance:(CMTime)tolerance {
 	
 	if(![self isReady]) {
+		NSLog(@"not ready");
 		return;
 	}
 	
@@ -695,6 +925,7 @@ static const NSString * ItemStatusContext;
 		bFinished = NO;
 	}
 	
+	// TODO?
 	// expensive call?
 	// destroy it on a thread?
 	[self.assetReader cancelReading];
@@ -704,20 +935,18 @@ static const NSString * ItemStatusContext;
 	
 	bSeeking = YES;
 	
+	// restrict time
 	time = CMTimeMaximum(time, kCMTimeZero);
 	time = CMTimeMinimum(time, duration);
 	
+	[self createAssetReaderWithTimeRange:CMTimeRangeMake(time, duration)];
+	
+	// set reader to real requested time
 	[_player seekToTime:time
 		toleranceBefore:tolerance
 		 toleranceAfter:tolerance
 	  completionHandler:^(BOOL finished) {
-		  
 		  bSeeking = NO;
-		  
-		  if([self.delegate respondsToSelector:@selector(playerDidFinishSeeking)]) {
-			  [self.delegate playerDidFinishSeeking];
-		  }
-		  
 	  }];
 }
 
@@ -796,7 +1025,7 @@ static const NSString * ItemStatusContext;
 }
 
 - (double)getCurrentTimeInSec {
-	return CMTimeGetSeconds(currentTime);
+	return CMTimeGetSeconds(videoSampleTime);
 }
 
 - (CMTime)getDuration {
@@ -834,13 +1063,17 @@ static const NSString * ItemStatusContext;
 }
 
 - (void)setVolume:(float)value {
-	volume = value;
 	
+	if (self.playerItem == nil) {
+		return;
+	}
 	if(![self isReady]) {
 		return;
 	}
+
+	volume = value;
 	
-	NSArray * audioTracks = [self.asset tracksWithMediaType:AVMediaTypeAudio];
+	NSArray * audioTracks = [self.playerItem.asset tracksWithMediaType:AVMediaTypeAudio];
 	NSMutableArray * allAudioParams = [NSMutableArray array];
 	for(AVAssetTrack * track in audioTracks) {
 		AVMutableAudioMixInputParameters * audioInputParams = [AVMutableAudioMixInputParameters audioMixInputParameters];
@@ -859,15 +1092,42 @@ static const NSString * ItemStatusContext;
 	return volume;
 }
 
-- (void)setLoop:(BOOL)value {
-	bLoop = value;
+- (void)setLoop:(playerLoopType)value {
+	loop = value;
 }
 
-- (BOOL)getLoop {
-	return bLoop;
+- (playerLoopType)getLoop {
+	return loop;
 }
 
 - (void)setSpeed:(float)value {
+	
+	if (!bSeeking && bWasPlayingBackwards && value > 0.0) {
+		// create assetReaders if we played backwards earlier
+		[self createAssetReaderWithTimeRange:CMTimeRangeMake(currentTime, duration)];
+		bWasPlayingBackwards = NO;
+	}
+	
+	if (!bWasPlayingBackwards && value < 0.0) {
+		
+#if !USE_VIDEO_OUTPUT
+		// not supported
+		NSLog(@"ERROR: Backwards playback is not supported. Minimum requirement is OSX 10.8 or iOS 6.0");
+		value = 0.0;
+#else
+		if (!self.playerItem.canPlayReverse) {
+			NSLog(@"ERROR: can not play backwards: not supported (check your codec)");
+			value = 0.0;
+		}
+		if (self.videoOutput == nil) {
+			NSLog(@"ERROR: can not play backwards: no video output");
+			value = 0.0;
+		}
+		
+		bWasPlayingBackwards = YES;
+#endif
+	}
+	
 	speed = value;
 	[_player setRate:value];
 }
@@ -887,54 +1147,5 @@ static const NSString * ItemStatusContext;
 - (void)setWillBeUpdatedExternally:(BOOL)value {
 	bWillBeUpdatedExternally = value;
 }
-
-#ifdef TARGET_IOS
-//---------------------------------------------------------- uiimage.
-static UIImage * imageFromSampleBuffer(CMSampleBufferRef sampleBuffer) {
-	
-	CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-	// Lock the base address of the pixel buffer.
-	CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-	
-	// Get the number of bytes per row for the pixel buffer.
-	size_t bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
-	// Get the pixel buffer width and height.
-	size_t width = CVPixelBufferGetWidth(imageBuffer);
-	size_t height = CVPixelBufferGetHeight(imageBuffer);
-	
-	// Create a device-dependent RGB color space.
-	static CGColorSpaceRef colorSpace = NULL;
-	if (colorSpace == NULL) {
-		colorSpace = CGColorSpaceCreateDeviceRGB();
-		if (colorSpace == NULL) {
-			// Handle the error appropriately.
-			return nil;
-		}
-	}
-	
-	// Get the base address of the pixel buffer.
-	void *baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
-	// Get the data size for contiguous planes of the pixel buffer.
-	size_t bufferSize = CVPixelBufferGetDataSize(imageBuffer);
-	
-	// Create a Quartz direct-access data provider that uses data we supply.
-	CGDataProviderRef dataProvider =
-	CGDataProviderCreateWithData(NULL, baseAddress, bufferSize, NULL);
-	// Create a bitmap image from data supplied by the data provider.
-	CGImageRef cgImage =
-	CGImageCreate(width, height, 8, 32, bytesPerRow,
-				  colorSpace, kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little,
-				  dataProvider, NULL, true, kCGRenderingIntentDefault);
-	CGDataProviderRelease(dataProvider);
-	
-	// Create and return an image object to represent the Quartz image.
-	UIImage *image = [UIImage imageWithCGImage:cgImage];
-	CGImageRelease(cgImage);
-	
-	CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-	
-	return image;
-}
-#endif
 
 @end
