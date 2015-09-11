@@ -156,21 +156,6 @@ void ofxOscReceiver::ProcessMessage( const osc::ReceivedMessage &m, const osc::I
 	messagesChannel.send( std::move(msg) );
 }
 
-int ofxOscReceiver::getNumWaitingMessages()
-{
-	// grab a lock on the queue
-	grabMutex();
-    
-	// check the length of the queue
-	int queue_length = (int)messages.size();
-    
-	// release the lock
-	releaseMutex();
-    
-	// return whether we have any messages
-	return queue_length;
-}
-
 bool ofxOscReceiver::hasWaitingMessages()
 {
 	return !messagesChannel.empty();

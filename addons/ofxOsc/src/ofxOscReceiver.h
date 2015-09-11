@@ -57,12 +57,6 @@ public:
 	/// listen_port is the port to listen for messages on
 	void setup( int listen_port );
 
-	/// returns the number of messages waiting for collection
-    int getNumWaitingMessages();
-    
-    /// clears next n messages (0 means all)
-    void clearMessages(int n=0);
-    
 	/// returns true if there are any messages waiting for collection
 	bool hasWaitingMessages();
 	/// take the next message on the queue of received messages, copy its details into message, and
