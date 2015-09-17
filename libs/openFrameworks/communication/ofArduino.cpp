@@ -548,7 +548,7 @@ void ofArduino::processSysExData(vector <unsigned char> data){
 			 buffer = *it;
 			 it++;
 			 if (it == data.end()) {
-				 ofLogError("ofArduino") << "something went wrong here";
+				 ofLogError("ofArduino") << "something went wrong while parsing arduino report-firmware message";
 				 return;
 			 }
 			 buffer += *it << 7;
