@@ -373,6 +373,42 @@ int	ofxUDPManager::PeekReceive()
 	return size;
 }
 
+//--------------------------------------------------------------------------------
+///	Return values:
+///	SOCKET_TIMEOUT indicates timeout
+///	SOCKET_ERROR in	case of	a problem.
+int	ofxUDPManager::PeekReceive(char* pBuff, const int iSize)
+{
+	if (m_hSocket == INVALID_SOCKET){
+		ofLogError("ofxUDPManager") << "INVALID_SOCKET";
+		return(SOCKET_ERROR);
+	}
+
+	if (m_dwTimeoutReceive	!= NO_TIMEOUT){
+		auto ret = WaitReceive(m_dwTimeoutReceive,0);
+		if(ret!=0){
+			return ret;
+		}
+	}
+
+	int	ret=0;
+
+	memset(pBuff, 0, iSize);
+	ret= recv(m_hSocket, pBuff,	iSize, MSG_PEEK);
+
+	if (ret	> 0){
+		canGetRemoteAddress= true;
+	}else{
+		canGetRemoteAddress = false;
+		//	if the network error is WOULDBLOCK, then return 0 instead of SOCKET_ERROR as it's not really a problem, just no data.
+		int SocketError = ofxNetworkCheckError();
+		if ( SocketError == OFXNETWORK_ERROR(WOULDBLOCK) )
+			return 0;
+	}
+
+	return ret;
+}
+
 
 //--------------------------------------------------------------------------------
 ///	Return values:
