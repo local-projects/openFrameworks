@@ -443,6 +443,13 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
 #else
 	if(texData.textureTarget == GL_TEXTURE_2D){
 #endif
+
+#ifdef OF_COMPRESSED_TEXTURES_HACK
+		if (texData.compressionType != OF_COMPRESS_NONE) {
+			texData.glInternalFormat = GL_COMPRESSED_RGBA;
+		}
+#endif
+
 		glBindTexture(texData.textureTarget,texData.textureID);
 		glTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, glFormat, pixelType, 0);  // init to black...
 
