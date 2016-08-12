@@ -55,7 +55,7 @@ static int pixelBitsFromPixelFormat(ofPixelFormat format){
 }
 
 template<typename PixelType>
-static int bytesFromPixelFormat(int w, int h, ofPixelFormat format){
+static size_t bytesFromPixelFormat(size_t w, size_t h, ofPixelFormat format){
 	return w*h*pixelBitsFromPixelFormat<PixelType>(format)/8;
 }
 
@@ -451,8 +451,8 @@ void ofPixels_<PixelType>::allocate(int w, int h, ofPixelFormat format){
 		return;
 	}
 
-	int newSize = bytesFromPixelFormat<PixelType>(w,h,format);
-	int oldSize = getTotalBytes();
+	size_t newSize = bytesFromPixelFormat<PixelType>(w,h,format);
+	size_t oldSize = getTotalBytes();
 	//we check if we are already allocated at the right size
 	if(bAllocated && newSize==oldSize){
         pixelFormat = format;
