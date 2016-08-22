@@ -133,6 +133,7 @@ public:
 	//all data will be sent guaranteed.
 	int  SendAll(const char* pBuff, const int iSize);
 	int  PeekReceive();			//	return number of bytes waiting
+	int  PeekReceive(char* pBuff, const int iSize);
 	int  Receive(char* pBuff, const int iSize);
 	void SetTimeoutSend(int timeoutInSeconds);
 	void SetTimeoutReceive(int timeoutInSeconds);
