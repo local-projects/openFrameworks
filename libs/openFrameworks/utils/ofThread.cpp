@@ -47,7 +47,10 @@ void ofThread::startThread(){
 	threadRunning = true;
 	this->mutexBlocks = true;
 
-	thread = std::thread(std::bind(&ofThread::run,this));
+	try{
+		thread = std::thread(std::bind(&ofThread::run,this));
+	}catch(...){}
+
 }
 
 //-------------------------------------------------
@@ -170,7 +173,15 @@ void ofThread::run(){
 	}catch(...){
 		ofLogFatalError("ofThreadErrorLogger::exception") << "Unknown exception.";
 	}
-	thread.detach();
+	if(thread.joinable()){
+		try{
+			thread.detach();
+		}
+	}catch(const std::exception& exc){
+		ofLogFatalError("ofThreadErrorLogger::exception") << exc.what();
+	}catch(...){
+		ofLogFatalError("ofThreadErrorLogger::exception") << "Unknown exception.";
+	}
 #ifdef TARGET_ANDROID
 	attachResult = ofGetJavaVMPtr()->DetachCurrentThread();
 #endif
