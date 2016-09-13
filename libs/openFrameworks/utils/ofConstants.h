@@ -76,6 +76,7 @@ enum ofTargetPlatform{
     #define OF_TARGET_IPHONE OF_TARGET_IOS
 #endif 
 
+
 // Cross-platform deprecation warning
 #ifdef __GNUC__
 	// clang also has this defined. deprecated(message) is only for gcc>=4.5
@@ -953,3 +954,9 @@ using ofDefaultVertexType = ofDefaultVec3;
 using ofDefaultNormalType = ofDefaultVec3;
 using ofDefaultColorType = ofFloatColor;
 using ofDefaultTexCoordType = ofDefaultVec2;
+
+#if defined(TARGET_EMSCRIPTEN)
+	#define OF_USE_POCO 0
+#elif !defined(OF_USE_POCO)
+	#define OF_USE_POCO 1
+#endif

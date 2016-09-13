@@ -1,3 +1,7 @@
+var Process = loadExtension("qbs.Process");
+var File = loadExtension("qbs.File");
+var TextFile = loadExtension("qbs.TextFile");
+
 function listDir(dir){
     var ls = new Process();
     ls.exec("ls", [dir]);
@@ -117,7 +121,9 @@ function findSourceRecursive(dir){
                   ,'-or', '-name', '*.S'
                   ,'-or', '-name', '*.c'
                   ,'-or', '-name', '*.inl'
-                  ,'-or', '-name', '*.glsl'];
+                  ,'-or', '-name', '*.glsl'
+                  ,'-or', '-name', '*.vert'
+                  ,'-or', '-name', '*.frag'];
     find.exec("find", params);
     if(find.exitCode()!==0){
         find.exec("C:\\msys64\\usr\\bin\\find", params);
