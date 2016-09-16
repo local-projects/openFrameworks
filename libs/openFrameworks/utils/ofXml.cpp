@@ -136,6 +136,7 @@ int ofXml::getNumChildren() const{
             numberOfChildren++;
         }
     }
+	list->release();
     return numberOfChildren;
 }
 
@@ -155,7 +156,7 @@ int ofXml::getNumChildren(const string& path) const{
             }
         }
     }
-
+	list->release();
     return numberOfChildren;
 }
 
@@ -341,7 +342,7 @@ bool ofXml::setToChild(unsigned long index){
             numberOfChildren++;
         }
     }
-
+	list->release();
     return false;
 }
 
