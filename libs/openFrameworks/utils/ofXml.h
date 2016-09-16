@@ -154,8 +154,10 @@ public:
                     lastElement->appendChild( text );
                 } catch ( Poco::XML::DOMException &e ){
                     ofLogError("ofxXml") << "addValue(): couldn't set node value: " << DOMErrorMessage(e.code());
+                    text->release();
                     return false;
                 }
+                text->release();
             }
 
             if(!element){
@@ -172,14 +174,14 @@ public:
                 Poco::XML::Text *text = getPocoDocument()->createTextNode(value);
                 try {
                     newElement->appendChild(text);
-                    text->release();
-                    
                 } catch ( Poco::XML::DOMException &e ){
                     ofLogError("ofxXml") << "addValue(): couldn't set node value: " << DOMErrorMessage(e.code());
+                    text->release();
                     return false;
                 }
+                text->release();
             }
-            
+
             if(element){
                 element->appendChild(newElement);
             }else{
