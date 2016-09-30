@@ -172,15 +172,10 @@ void ofThread::run(){
 	}catch(...){
 		ofLogFatalError("ofThreadErrorLogger::exception") << "Unknown exception.";
 	}
-	if(thread.joinable()){
-		try{
-			thread.detach();
-		}catch(const std::exception& exc){
-			ofLogFatalError("ofThreadErrorLogger::exception") << exc.what();
-		}catch(...){
-			ofLogFatalError("ofThreadErrorLogger::exception") << "Unknown exception.";
-		}
-	}
+	try {
+		thread.detach();
+	}catch (...) {}
+
 #ifdef TARGET_ANDROID
 	attachResult = ofGetJavaVMPtr()->DetachCurrentThread();
 #endif

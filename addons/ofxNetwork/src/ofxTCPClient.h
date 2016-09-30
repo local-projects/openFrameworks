@@ -81,7 +81,7 @@ class ofxTCPClient{
 		bool isConnected();
 		int getPort();
 		string getIP();
-
+		ofxTCPManager& getTcpManager() { return TCPClient; }
 
 
 
