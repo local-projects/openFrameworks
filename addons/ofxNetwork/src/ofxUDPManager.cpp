@@ -394,16 +394,16 @@ int	ofxUDPManager::PeekReceive(char* pBuff, const int iSize)
 	int	ret=0;
 
 	memset(pBuff, 0, iSize);
-	ret= recv(m_hSocket, pBuff,	iSize, MSG_PEEK);
+	ret = recv(m_hSocket, pBuff,	iSize, MSG_PEEK);
 
 	if (ret	> 0){
 		canGetRemoteAddress= true;
 	}else{
 		canGetRemoteAddress = false;
 		//	if the network error is WOULDBLOCK, then return 0 instead of SOCKET_ERROR as it's not really a problem, just no data.
-		int SocketError = ofxNetworkCheckError();
-		if ( SocketError == OFXNETWORK_ERROR(WOULDBLOCK) )
-			return 0;
+		//int SocketError = ofxNetworkCheckError();
+		//if ( SocketError == OFXNETWORK_ERROR(WOULDBLOCK) )
+		//	return 0;
 	}
 
 	return ret;

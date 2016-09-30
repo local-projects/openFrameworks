@@ -652,7 +652,7 @@ string ofSystemTextBoxDialog(string question, string text){
 			g_szClassName,
 			convertNarrowToWide(question).c_str(),
 			WS_POPUP | WS_CAPTION | DS_MODALFRAME | WS_SYSMENU,
-			CW_USEDEFAULT, CW_USEDEFAULT, 240, 140,
+			CW_USEDEFAULT, CW_USEDEFAULT, 540, 140,
 			WindowFromDC(wglGetCurrentDC()), nullptr, GetModuleHandle(0),nullptr);
 
 		if(dialog == nullptr)
@@ -667,7 +667,7 @@ string ofSystemTextBoxDialog(string question, string text){
 		EnableWindow(WindowFromDC(wglGetCurrentDC()), FALSE);
 		HWND hEdit = CreateWindowEx(WS_EX_CLIENTEDGE, L"EDIT\0", convertNarrowToWide(text).c_str(),
 			WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-			10, 10, 210, 40, dialog, (HMENU)101, GetModuleHandle(nullptr), nullptr);
+			10, 10, 510, 40, dialog, (HMENU)101, GetModuleHandle(nullptr), nullptr);
 
 
 		HWND okButton = CreateWindowEx(WS_EX_CLIENTEDGE, L"BUTTON\0", L"OK\0",
