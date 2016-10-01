@@ -24,18 +24,7 @@
  * either License.
  */
 
-#pragma once
+#ifndef _WINDOWS_STDBOOL_EMULATED_H_
+#define _WINDOWS_STDBOOL_EMULATED_H_
 
-#include <stdint.h>
-
-// MinGW defines _SSIZE_T_ in sys/types.h when it defines ssize_t to be a long.
-// Redefining it causes an error.
-// MSVC does not define this.
-#ifndef _SSIZE_T_
-#define _SSIZE_T_
-#ifdef _WIN64
-typedef __int64 ssize_t;
-#else
-typedef long ssize_t;
-#endif
-#endif // _SSIZE_T_
+#endif//_WINDOWS_STDBOOL_EMULATED_H_

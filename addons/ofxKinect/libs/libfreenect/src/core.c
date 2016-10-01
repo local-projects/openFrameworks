@@ -34,8 +34,9 @@
 #include "freenect_internal.h"
 #include "registration.h"
 #include "cameras.h"
+#ifdef BUILD_AUDIO
 #include "loader.h"
-
+#endif
 
 FREENECTAPI int freenect_init(freenect_context **ctx, freenect_usb_context *usb_ctx)
 {
@@ -48,7 +49,11 @@ FREENECTAPI int freenect_init(freenect_context **ctx, freenect_usb_context *usb_
 	memset(*ctx, 0, sizeof(freenect_context));
 
 	(*ctx)->log_level = LL_WARNING;
-	(*ctx)->enabled_subdevices = (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA);
+	(*ctx)->enabled_subdevices = (freenect_device_flags)(FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA
+#ifdef BUILD_AUDIO
+			| FREENECT_DEVICE_AUDIO
+#endif
+			);
 	res = fnusb_init(&(*ctx)->usb, usb_ctx);
 	if (res < 0) {
 		free(*ctx);
@@ -89,11 +94,13 @@ FREENECTAPI int freenect_process_events_timeout(freenect_context *ctx, struct ti
 			freenect_stop_video(dev);
 			freenect_stop_depth(dev);
 		}
+#ifdef BUILD_AUDIO
 		if (dev->usb_audio.device_dead) {
 			FN_ERROR("USB audio marked dead, stopping streams\n");
 			res = -1; // Or something else to tell the user that the device just vanished.
 			freenect_stop_audio(dev);
 		}
+#endif
 		dev = dev->next;
 	}
 	return res;
@@ -125,18 +132,23 @@ FREENECTAPI void freenect_free_device_attributes(struct freenect_device_attribut
 	return;
 }
 
-FREENECTAPI int freenect_supported_subdevices(void)
-{
+FREENECTAPI int freenect_supported_subdevices(void) {
+#ifdef BUILD_AUDIO
 	return FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA | FREENECT_DEVICE_AUDIO;
+#else
+	return FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA;
+#endif
 }
 
-FREENECTAPI void freenect_select_subdevices(freenect_context *ctx, freenect_device_flags subdevs)
-{
-	ctx->enabled_subdevices = (freenect_device_flags)(subdevs & (FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA | FREENECT_DEVICE_AUDIO));
+FREENECTAPI void freenect_select_subdevices(freenect_context *ctx, freenect_device_flags subdevs) {
+	ctx->enabled_subdevices = (freenect_device_flags)(subdevs & (FREENECT_DEVICE_MOTOR | FREENECT_DEVICE_CAMERA
+#ifdef BUILD_AUDIO
+			| FREENECT_DEVICE_AUDIO
+#endif
+			));
 }
 
-FREENECTAPI freenect_device_flags freenect_enabled_subdevices(freenect_context *ctx)
-{
+FREENECTAPI freenect_device_flags freenect_enabled_subdevices(freenect_context *ctx) {
 	return ctx->enabled_subdevices;
 }
 
@@ -188,7 +200,7 @@ FREENECTAPI int freenect_open_device_by_camera_serial(freenect_context *ctx, fre
 	int count = fnusb_list_device_attributes(&ctx->usb, &attrlist);
 	if (count < 0) {
 		FN_ERROR("freenect_open_device_by_camera_serial: Couldn't enumerate serial numbers\n");
-		return count;
+		return -1;
 	}
 	int index = 0;
 	for(item = attrlist ; item != NULL; item = item->next , index++) {

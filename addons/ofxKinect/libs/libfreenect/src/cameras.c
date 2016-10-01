@@ -841,6 +841,7 @@ static int freenect_fetch_zero_plane_info(freenect_device *dev)
 int freenect_start_depth(freenect_device *dev)
 {
 	freenect_context *ctx = dev->parent;
+	int res;
 
 	if (dev->depth.running)
 		return -1;
@@ -868,12 +869,7 @@ int freenect_start_depth(freenect_device *dev)
 			return -1;
 	}
 
-	const unsigned char depth_endpoint = 0x82;
-	int packet_size = fnusb_get_max_iso_packet_size(&dev->usb_cam, depth_endpoint, DEPTH_PKTBUF);
-
-	FN_INFO("[Stream 70] Negotiated packet size %d\n", packet_size);
-
-	int res = fnusb_start_iso(&dev->usb_cam, &dev->depth_isoc, depth_process, depth_endpoint, NUM_XFERS, PKTS_PER_XFER, packet_size);
+	res = fnusb_start_iso(&dev->usb_cam, &dev->depth_isoc, depth_process, 0x82, NUM_XFERS, PKTS_PER_XFER, DEPTH_PKTBUF);
 	if (res < 0)
 		return res;
 
@@ -905,6 +901,7 @@ int freenect_start_depth(freenect_device *dev)
 int freenect_start_video(freenect_device *dev)
 {
 	freenect_context *ctx = dev->parent;
+	int res;
 
 	if (dev->video.running)
 		return -1;
@@ -1018,12 +1015,7 @@ int freenect_start_video(freenect_device *dev)
 			break;
 	}
 
-	const unsigned char video_endpoint = 0x81;
-	int packet_size = fnusb_get_max_iso_packet_size(&dev->usb_cam, video_endpoint, VIDEO_PKTBUF);
-
-	FN_INFO("[Stream 80] Negotiated packet size %d\n", packet_size);
-
-	int res = fnusb_start_iso(&dev->usb_cam, &dev->video_isoc, video_process, video_endpoint, NUM_XFERS, PKTS_PER_XFER, packet_size);
+	res = fnusb_start_iso(&dev->usb_cam, &dev->video_isoc, video_process, 0x81, NUM_XFERS, PKTS_PER_XFER, VIDEO_PKTBUF);
 	if (res < 0)
 		return res;
 
