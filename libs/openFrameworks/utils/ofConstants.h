@@ -941,6 +941,7 @@ template<typename T>
 class ofColor_;
 typedef ofColor_<float> ofFloatColor;
 
+
 #ifdef OF_USE_LEGACY_MESH
 using ofDefaultVec2 = ofVec2f;
 using ofDefaultVec3 = ofVec3f;
