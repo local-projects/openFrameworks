@@ -36,7 +36,6 @@ class ofMesh_;
 using ofMesh = ofMesh_<ofDefaultVertexType, ofDefaultNormalType, ofDefaultColorType, ofDefaultTexCoordType>;
 
 class ofPath;
-class ofFbo;
 class of3dPrimitive;
 class ofLight;
 class ofMaterial;
@@ -48,6 +47,8 @@ class of3dGraphics;
 class ofVbo;
 class ofVboMesh;
 class ofSoundBuffer;
+class ofFbo;
+enum class ofFboBeginMode : short;
 
 
 bool ofIsVFlipped();
@@ -463,7 +464,7 @@ public:
 	/// \param name The name of the video resource to load.
 	/// \returns True if the video was loaded successfully.
 	/// \sa loadAsync()
-	virtual bool				load(string name) = 0;
+    virtual bool				load(string name) = 0;
 	/// \brief Asynchronously load a video resource by name.
 	///
 	/// The list of supported video types and sources (e.g. rtsp:// sources) is
@@ -474,7 +475,7 @@ public:
 	///
 	/// \param name The name of the video resource to load.
 	/// \sa isLoaded()
-	virtual void				loadAsync(string name);
+    virtual void				loadAsync(string name);
 	
 	/// \brief Play the video from the current playhead position.
 	/// \sa getPosition()
@@ -1923,7 +1924,7 @@ public:
 #ifndef TARGET_OPENGLES
 	virtual void bindForBlitting(const ofFbo & fboSrc, ofFbo & fboDst, int attachmentPoint=0)=0;
 #endif
-	virtual void begin(const ofFbo & fbo, bool setupPerspective)=0;
+    virtual void begin(const ofFbo & fbo, ofFboBeginMode mode)=0;
 	virtual void end(const ofFbo & fbo)=0;
 
 };
@@ -1934,48 +1935,50 @@ class ofBaseURLFileLoader{
 public:
 
 	virtual ~ofBaseURLFileLoader(){};
-	
+
 	/// \brief make an HTTP request
 	/// blocks until a response is returned or the request times out
 	/// \param url HTTP url to request, ie. "http://somewebsite.com/someapi/someimage.jpg"
 	/// \return HTTP response on success or failure
 	virtual ofHttpResponse get(const string& url)=0;
-	
+
 	/// \brief make an asynchronous HTTP request
 	/// will not block, placed in a queue and run using a background thread
 	/// \param url HTTP url to request, ie. "http://somewebsite.com/someapi/someimage.jpg"
 	/// \param name optional key to use when sorting requests
 	/// \return unique id for the active HTTP request
 	virtual int getAsync(const string& url, const string& name="")=0;
-	
+
 	/// \brief make an HTTP request and save the response data to a file
 	/// blocks until a response is returned or the request times out
 	/// \param url HTTP url to request, ie. "http://somewebsite.com/someapi/someimage.jpg"
 	/// \param path file path to save to
 	/// \return HTTP response on success or failure
-	virtual ofHttpResponse saveTo(const string& url, const string& path)=0;
-	
+	virtual ofHttpResponse saveTo(const string& url, const std::filesystem::path& path)=0;
+
 	/// \brief make an asynchronous HTTP request and save the response data to a file
 	/// will not block, placed in a queue and run using a background thread
 	/// \param url HTTP url to request, ie. "http://somewebsite.com/someapi/someimage.jpg"
 	/// \param path file path to save to
 	/// \returns unique id for the active HTTP request
-	virtual int saveAsync(const string& url, const string& path)=0;
-	
+	virtual int saveAsync(const string& url, const std::filesystem::path& path)=0;
+
 	/// \brief remove an active HTTP request from the queue
 	/// \param unique HTTP request id
 	virtual void remove(int id)=0;
-	
+
 	/// \brief clear all active HTTP requests from the queue
 	virtual void clear()=0;
-	
+
 	/// \brief stop & remove all active and waiting HTTP requests
 	virtual void stop()=0;
-	
+
 	/// \brief low level HTTP request implementation
 	/// blocks until a response is returned or the request times out
 	/// \return HTTP response on success or failure
-	virtual ofHttpResponse handleRequest(ofHttpRequest request) = 0;
+	virtual ofHttpResponse handleRequest(const ofHttpRequest & request) = 0;
+	virtual int handleRequestAsync(const ofHttpRequest& request)=0; // returns id
+	
 };
 
 /// \class ofBaseMaterial
@@ -2011,7 +2014,7 @@ public:
 	/// \brief create and return a shader used to implement the materials effect for a given renderer
 	/// \param textureTarget an implementation-specific value to specify the type of shader to use
 	/// \param renderer programmable renderer instance to create the material shader for
-	virtual const ofShader & getShader(int textureTarget, ofGLProgrammableRenderer & renderer) const=0;
+    virtual const ofShader & getShader(int textureTarget, bool geometryHasColor, ofGLProgrammableRenderer & renderer) const=0;
 	
 	/// \brief upload the given renderer's normal matrix to the material shader
 	/// \param shader the material shader, created by getShader()
