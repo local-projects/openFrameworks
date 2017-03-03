@@ -1608,7 +1608,7 @@ void ofGLRenderer::drawString(string textString, float x, float y, float z) cons
 			dScreen.x += rViewport.x;
 
 			dScreen.y *= rViewport.height;
-			dScreen.y += rViewport.y;
+			//dScreen.y += rViewport.y;
 
 			if (dScreen.z >= 1){
 				return;
