@@ -40,3 +40,7 @@ OF_CORE_FRAMEWORKS = -framework Security
 // once all libraries are compiled for libc++ / all architectures
 CLANG_CXX_LIBRARY = libc++
 CLANG_CXX_LANGUAGE_STANDARD = c++11
+
+/// add ccache to the build system! speeds up compile times by caching!
+CC = $(OF_PATH)/libs/openFrameworksCompiled/project/osx/ccache-clang.sh
+CXX = $(OF_PATH)/libs/openFrameworksCompiled/project/osx/ccache-clang++.sh
