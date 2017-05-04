@@ -150,8 +150,12 @@ bool ofxTCPManager::Bind(const ofxTCPSettings &settings)
 	memset(&local, 0, sizeof(sockaddr_in));
 
 	local.sin_family = AF_INET;
-	//local.sin_addr.s_addr = INADDR_ANY;
-	local.sin_addr.s_addr = inet_addr(settings.address.c_str());
+
+	if(settings.address.size()){ //if user specified an address to bind to, use it
+		local.sin_addr.s_addr = inet_addr(settings.address.c_str());
+	}else{ //otherwise, use any
+		local.sin_addr.s_addr = INADDR_ANY;
+	}
 
 	//Port MUST be in Network Byte Order
 	local.sin_port = htons(settings.port);
