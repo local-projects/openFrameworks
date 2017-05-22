@@ -44,10 +44,16 @@ bool ofxTCPClient::setup(const ofxTCPSettings & settings){
 	if( !TCPClient.Create() ){
 		ofLogError("ofxTCPClient") << "setup(): couldn't create client";
 		return false;
-	}else if( !TCPClient.Connect((char *)settings.address.c_str(), settings.port) ){
-		ofLogError("ofxTCPClient") << "setup(): couldn't connect to " << settings.address << " " << settings.port;
-		TCPClient.Close(); //we free the connection
-		return false;
+	}else{
+		if(TCPClient.BindClient(settings)){ //see if user wants the connection to be made from a specific interface .srcAddress
+			if( !TCPClient.Connect((char *)settings.address.c_str(), settings.port) ){
+				ofLogError("ofxTCPClient") << "setup(): couldn't connect to " << settings.address << " " << settings.port;
+				TCPClient.Close(); //we free the connection
+				return false;
+			}
+		}else{
+			return false;
+		}
 	}
 
 	TCPClient.SetNonBlocking(!settings.blocking);

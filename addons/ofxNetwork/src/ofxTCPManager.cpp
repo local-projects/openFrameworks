@@ -167,6 +167,30 @@ bool ofxTCPManager::Bind(const ofxTCPSettings &settings)
 	return true;
 }
 
+bool ofxTCPManager::BindClient(const ofxTCPSettings &settings)
+{
+	struct sockaddr_in local;
+	memset(&local, 0, sizeof(sockaddr_in));
+
+	local.sin_family = AF_INET;
+
+	if(settings.srcAddress.size()){ //if user specified an address to bind to, use it
+		local.sin_addr.s_addr = inet_addr(settings.srcAddress.c_str());
+	}else{
+		local.sin_addr.s_addr = INADDR_ANY;
+	}
+
+	//Port MUST be in Network Byte Order
+	local.sin_port = htons(0);
+
+	if (::bind(m_hSocket,(struct sockaddr*)&local,sizeof(local))){
+		ofxNetworkCheckError();
+		return false;
+	}
+	return true;
+}
+
+
 //--------------------------------------------------------------------------------
 bool ofxTCPManager::Accept(ofxTCPManager& sConnect)
 {

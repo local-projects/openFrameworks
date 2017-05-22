@@ -178,6 +178,7 @@ public:
 	bool Listen(int iMaxConnections);
 	bool Connect(const char *pAddrStr, unsigned short usPort);
 	bool Bind(const ofxTCPSettings &settings);
+	bool BindClient(const ofxTCPSettings &settings);
 	bool Accept(ofxTCPManager& sock);
 	//sends the data, but it is not guaranteed that really all data will be sent
 	int  Send(const char* pBuff, const int iSize);
