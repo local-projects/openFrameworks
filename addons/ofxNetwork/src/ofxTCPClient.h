@@ -6,7 +6,7 @@
 #include "ofFileUtils.h"
 #include "ofTypes.h"
 
-#define TCP_MAX_MSG_SIZE 512
+#define TCP_MAX_MSG_SIZE 1024
 //#define STR_END_MSG "[/TCP]"
 //#define STR_END_MSG_LEN 6
 
