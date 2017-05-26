@@ -82,10 +82,9 @@ class ofxTCPClient{
 		int getPort();
 		string getIP();
 
-
-
-
+		ofxTCPManager & getTCPManager(){return TCPClient;};
 private:
+
 		// private copy so this can't be copied to avoid problems with destruction
 		ofxTCPClient(const ofxTCPManager & mom){};
 		ofxTCPClient & operator=(const ofxTCPClient & mom){return *this;}
