@@ -1024,7 +1024,7 @@ void ofMesh_<V,N,C,T>::append(const ofMesh_<V,N,C,T> & mesh){
 
 //--------------------------------------------------------------
 template<class V, class N, class C, class T>
-void ofMesh_<V,N,C,T>::load(std::filesystem::path path){
+void ofMesh_<V,N,C,T>::load(const std::filesystem::path& path){
 	ofFile is(path, ofFile::ReadOnly);
 	auto & data = *this;
 
@@ -1264,7 +1264,7 @@ void ofMesh_<V,N,C,T>::load(std::filesystem::path path){
 
 //--------------------------------------------------------------
 template<class V, class N, class C, class T>
-void ofMesh_<V,N,C,T>::save(std::filesystem::path path, bool useBinary) const{
+void ofMesh_<V,N,C,T>::save(const std::filesystem::path& path, bool useBinary) const{
 	ofFile os(path, ofFile::WriteOnly);
 	const auto & data = *this;
 
@@ -1297,7 +1297,7 @@ void ofMesh_<V,N,C,T>::save(std::filesystem::path path, bool useBinary) const{
 		}
 	}
 
-	std::size_t faceSize = 3;
+	uint8_t faceSize = 3;
 	if(data.getNumIndices()){
 		os << "element face " << data.getNumIndices() / faceSize << endl;
 		os << "property list uchar int vertex_indices" << endl;
@@ -1343,25 +1343,20 @@ void ofMesh_<V,N,C,T>::save(std::filesystem::path path, bool useBinary) const{
 	}
 
 	if(data.getNumIndices()) {
-		for(std::size_t i = 0; i < data.getNumIndices(); i += faceSize) {
+		for(uint32_t i = 0; i < data.getNumIndices(); i += faceSize) {
 			if(useBinary) {
 				os.write((char*) &faceSize, sizeof(unsigned char));
-				for(std::size_t j = 0; j < faceSize; j++) {
-					std::size_t curIndex = data.getIndex(i + j);
-					os.write((char*) &curIndex, sizeof(std::size_t));
-				}
+				os.write((char*)&data.getIndices()[i], faceSize);
 			} else {
 				os << (std::size_t) faceSize << " " << data.getIndex(i) << " " << data.getIndex(i+1) << " " << data.getIndex(i+2) << endl;
 			}
 		}
 	} else if(data.getMode() == OF_PRIMITIVE_TRIANGLES) {
-		for(std::size_t i = 0; i < data.getNumVertices(); i += faceSize) {
-			std::size_t indices[] = {i, i + 1, i + 2};
+		for(uint32_t i = 0; i < data.getNumVertices(); i += faceSize) {
+			uint32_t indices[] = {i, i + 1, i + 2};
 			if(useBinary) {
 				os.write((char*) &faceSize, sizeof(unsigned char));
-				for(std::size_t j = 0; j < faceSize; j++) {
-					os.write((char*) &indices[j], sizeof(std::size_t));
-				}
+				os.write((char*) indices, sizeof(indices));
 			} else {
 				os << (std::size_t) faceSize << " " << indices[0] << " " << indices[1] << " " << indices[2] << endl;
 			}
@@ -1800,6 +1795,51 @@ void ofMesh_<V,N,C,T>::smoothNormals( float angle ) {
 		setFromTriangles( triangles );
 
 	}
+}
+
+//--------------------------------------------------------------
+template<class V, class N, class C, class T>
+void ofMesh_<V,N,C,T>::flatNormals() {
+    if( getMode() == OF_PRIMITIVE_TRIANGLES) {
+        
+        // get copy original mesh data
+        auto numIndices = getIndices().size();
+        auto verts = getVertices();
+        auto texCoords = getTexCoords();
+        auto colors = getColors();
+        
+        // remove all data to start from scratch
+        clear();
+        
+        // add mesh data back, duplicating vertices and recalculating normals
+        N normal;
+        for(ofIndexType i = 0; i < numIndices; i++) {
+            ofIndexType indexCurr = getIndex(i);
+    
+            if(i % 3 == 0) {
+                ofIndexType indexNext1 = getIndex(i + 1);
+                ofIndexType indexNext2 = getIndex(i + 2);
+                auto e1 = verts[indexCurr] - verts[indexNext1];
+                auto e2 = verts[indexNext2] - verts[indexNext1];
+                normal = glm::normalize(glm::cross(e1, e2));
+            }
+    
+            addIndex(i);
+            addNormal(normal);
+    
+            if(indexCurr < texCoords.size()) {
+                addTexCoord(texCoords[indexCurr]);
+            }
+    
+            if(indexCurr < verts.size()) {
+                addVertex(verts[indexCurr]);
+            }
+    
+            if(indexCurr < colors.size()) {
+                addColor(colors[indexCurr]);
+            }
+        }
+    }
 }
 
 // PLANE MESH //

@@ -138,11 +138,13 @@ ofSerial::~ofSerial(){
 }
 
 //----------------------------------------------------------------
+#if defined( TARGET_OSX )
 static bool isDeviceArduino( ofSerialDeviceInfo & A ){
 	//TODO - this should be ofStringInString
 	return (strstr(A.getDeviceName().c_str(), "usbserial") != nullptr
 			|| strstr(A.getDeviceName().c_str(), "usbmodem") != nullptr);
 }
+#endif
 
 //----------------------------------------------------------------
 void ofSerial::buildDeviceList(){
@@ -170,7 +172,7 @@ void ofSerial::buildDeviceList(){
 		ofDirectory dir("/dev");
 		int deviceCount = 0;
 		for(auto & entry: dir){
-			std::string deviceName = entry.path();
+			std::string deviceName = entry.getFileName();
 
 			//we go through the prefixes
 			for(auto & prefix: prefixMatch){
@@ -194,7 +196,7 @@ void ofSerial::buildDeviceList(){
 		ofLogNotice("ofSerial") << "found " << nPorts << " devices";
 		for(int i = 0; i < nPorts; i++){
 			//NOTE: we give the short port name for both as that is what the user should pass and the short name is more friendly
-			devices.push_back(ofSerialDeviceInfo(string(portNamesShort[i]), string(portNamesShort[i]), i));
+			devices.push_back(ofSerialDeviceInfo(string(portNamesShort[i]), string(portNamesFriendly[i]), i));
 		}
 
 	#endif
