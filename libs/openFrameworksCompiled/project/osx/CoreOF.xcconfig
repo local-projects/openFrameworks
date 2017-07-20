@@ -39,3 +39,5 @@ OF_CORE_HEADERS = $(HEADER_OF) $(HEADER_POCO) $(HEADER_FREETYPE) $(HEADER_FREETY
 
 // define which C++ library is required to build and avoid tr1/memory hangups
 CLANG_CXX_LIBRARY = libstdc++
+
+USER_HEADER_SEARCH_PATHS = "$(OF_PATH)/libs/openssl/include"

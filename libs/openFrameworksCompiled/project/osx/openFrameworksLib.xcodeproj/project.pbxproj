@@ -828,6 +828,7 @@
 		E4B27C1610CBEB8E00536013 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ADDITIONAL_SDKS = /Developer/SDKs/MacOSX10.9.sdk;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/../../lib/osx/";
 				COPY_PHASE_STRIP = NO;
@@ -852,13 +853,14 @@
 				OBJROOT = "$(SRCROOT)/../../lib/osx/build/debug/";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = openFrameworksDebug;
-				SDKROOT = "";
+				SDKROOT = /Developer/SDKs/MacOSX10.9.sdk;
 			};
 			name = Debug;
 		};
 		E4B27C1710CBEB8E00536013 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ADDITIONAL_SDKS = /Developer/SDKs/MacOSX10.9.sdk;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(SRCROOT)/../../lib/osx/";
 				COPY_PHASE_STRIP = YES;
@@ -885,7 +887,7 @@
 				OBJROOT = "$(SRCROOT)/../../lib/osx/build/release/";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = openFrameworks;
-				SDKROOT = "";
+				SDKROOT = /Developer/SDKs/MacOSX10.9.sdk;
 			};
 			name = Release;
 		};
