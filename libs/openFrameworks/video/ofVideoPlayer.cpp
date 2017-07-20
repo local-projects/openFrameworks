@@ -117,6 +117,17 @@ ofPixelsRef ofVideoPlayer::getPixelsRef(){
 //}
 
 //---------------------------------------------------------------------------
+//for getting a pointer to the texture (conform with ofBaseVideoPlayer)
+ofTexture * ofVideoPlayer::getTexture(){
+	if (playerTex == NULL) {
+		return &tex;
+	}
+	else {
+		return playerTex;
+	}
+}
+
+//---------------------------------------------------------------------------
 //for getting a reference to the texture
 ofTexture & ofVideoPlayer::getTextureReference(){
 	if(playerTex == NULL){
