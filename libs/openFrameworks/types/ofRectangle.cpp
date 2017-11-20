@@ -50,7 +50,7 @@ void ofRectangle::set(float px, float py, float w, float h) {
 
 //----------------------------------------------------------
 void ofRectangle::set(const glm::vec3& p, float w, float h) {
-	set(p.xy(),w,h);
+	set(p.x, p.y,w,h);
 }
 
 //----------------------------------------------------------
@@ -65,7 +65,7 @@ void ofRectangle::set(const ofRectangle& rect){
 
 //----------------------------------------------------------
 void ofRectangle::set(const glm::vec3& p0, const glm::vec3& p1) {
-	set(p0.xy(), p1.xy());
+	set(glm::vec2(p0.x, p0.y), glm::vec2(p1.x, p1.y));
 }
 
 //----------------------------------------------------------
@@ -128,7 +128,9 @@ void ofRectangle::setFromCenter(float px, float py, float w, float h) {
 
 //----------------------------------------------------------
 void ofRectangle::setFromCenter(const glm::vec3& p, float w, float h) {
-	setFromCenter(p.xy(),w,h);
+	//setFromCenter(p.xy(),w,h);
+	setFromCenter(glm::vec2(p.x, p.y),w,h);
+	
 }
 
 //----------------------------------------------------------
@@ -144,7 +146,8 @@ void ofRectangle::translate(float dx, float dy) {
 
 //----------------------------------------------------------
 void ofRectangle::translate(const glm::vec3& dp) {
-	translate(dp.xy());
+	//translate(dp.xy());
+	translate(glm::vec2(dp.x, dp.y));
 }
 
 //----------------------------------------------------------
@@ -177,7 +180,8 @@ void ofRectangle::scale(float sX, float sY) {
 
 //----------------------------------------------------------
 void ofRectangle::scale(const glm::vec3& s) {
-	scale(s.xy());
+	//scale(s.xy());
+	scale(s.x, s.y);
 }
 
 //----------------------------------------------------------
@@ -207,7 +211,8 @@ void ofRectangle::scaleFromCenter(float sX, float sY) {
 
 //----------------------------------------------------------
 void ofRectangle::scaleFromCenter(const glm::vec3& s) {
-	scaleFromCenter(s.xy());
+	//scaleFromCenter(s.xy());
+	scaleFromCenter(s.x, s.y);
 }
 
 //----------------------------------------------------------
@@ -389,7 +394,7 @@ void ofRectangle::alignTo(const glm::vec3& targetPoint,
 						  ofAlignHorz thisHorzAnchor,
 						  ofAlignVert thisVertAnchor) {
 
-	alignTo(targetPoint.xy(), thisHorzAnchor, thisVertAnchor);
+	alignTo(glm::vec2(targetPoint.x,targetPoint.y), thisHorzAnchor, thisVertAnchor);
 }
 
 //----------------------------------------------------------
@@ -431,7 +436,8 @@ bool ofRectangle::inside(float px, float py) const {
 
 //----------------------------------------------------------
 bool ofRectangle::inside(const glm::vec3& p) const {
-	return inside(p.xy());
+	//return inside(p.xy());
+	return inside(p.x, p.y);
 }
 
 //----------------------------------------------------------
@@ -449,7 +455,7 @@ bool ofRectangle::inside(const ofRectangle& rect) const {
 //----------------------------------------------------------
 bool ofRectangle::inside(const glm::vec3& p0, const glm::vec3& p1) const {
     // check to see if a line segment is inside the rectangle
-	return inside(p0.xy(), p1.xy());
+	return inside(glm::vec2(p0.x,p0.y),glm::vec2(p1.x,p1.y));
 }
 
 //----------------------------------------------------------
@@ -466,7 +472,7 @@ bool ofRectangle::intersects(const ofRectangle& rect) const {
 
 //----------------------------------------------------------
 bool ofRectangle::intersects(const glm::vec3& p0, const glm::vec3& p1) const {
-	return intersects(p0.xy(), p1.xy());
+	return intersects(glm::vec2(p0.x, p0.y), glm::vec2(p1.x, p1.y));
 }
 
 //----------------------------------------------------------
@@ -474,10 +480,10 @@ bool ofRectangle::intersects(const glm::vec2& p0, const glm::vec2& p1) const {
 	// check for a line intersection
 	glm::vec2 p;
 
-	auto topLeft     = getTopLeft().xy();
-	auto topRight    = getTopRight().xy();
-	auto bottomRight = getBottomRight().xy();
-	auto bottomLeft  = getBottomLeft().xy();
+	glm::vec2 topLeft     = getTopLeft();
+	glm::vec2 topRight    = getTopRight();
+	glm::vec2 bottomRight = getBottomRight();
+	glm::vec2 bottomLeft  = getBottomLeft();
 
 	return inside(p0) || // check end inside
 		   inside(p1) || // check end inside
@@ -494,7 +500,7 @@ void ofRectangle::growToInclude(float px, float py) {
 
 //----------------------------------------------------------
 void ofRectangle::growToInclude(const glm::vec3& p) {
-	growToInclude(p.xy());
+	growToInclude(glm::vec2(p.x,p.y));
 }
 
 //----------------------------------------------------------
@@ -521,7 +527,9 @@ void ofRectangle::growToInclude(const ofRectangle& rect) {
 
 //----------------------------------------------------------
 void ofRectangle::growToInclude(const glm::vec3& p0, const glm::vec3& p1) {
-	growToInclude(p0.xy(), p1.xy());
+	//growToInclude(p0.xy(), p1.xy());
+	growToInclude(glm::vec2(p0.x,p0.y), glm::vec2(p1.x,p1.y));
+	
 }
 
 //----------------------------------------------------------
@@ -790,7 +798,7 @@ ofRectangle& ofRectangle::operator = (const ofRectangle& rect) {
 
 //----------------------------------------------------------
 ofRectangle ofRectangle::operator + (const glm::vec3 & point){
-	return operator+(point.xy());
+	return operator+(glm::vec2(point.x,point.y));
 }
 
 //----------------------------------------------------------
@@ -803,7 +811,7 @@ ofRectangle ofRectangle::operator + (const glm::vec2 & point){
 
 //----------------------------------------------------------
 ofRectangle ofRectangle::operator - (const glm::vec3 & point){
-	return operator-(point.xy());
+	return operator-(glm::vec2(point.x,point.y));
 }
 
 //----------------------------------------------------------

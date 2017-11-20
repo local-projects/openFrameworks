@@ -347,6 +347,7 @@ void ofLight::onPositionChanged() {
 
 //----------------------------------------
 void ofLight::onOrientationChanged() {
+	/*
 	if(data->glIndex==-1) return;
 	if(getIsDirectional()) {
 		// if we are a directional light and not positional, update light position (direction)
@@ -367,4 +368,5 @@ void ofLight::onOrientationChanged() {
 		data->up = getUpDir();
 		data->right = getXAxis();
 	}
+	 */
 }

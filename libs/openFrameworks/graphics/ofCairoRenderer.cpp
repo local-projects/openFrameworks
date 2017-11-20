@@ -313,7 +313,8 @@ void ofCairoRenderer::draw(const vector<glm::vec3> & vertexData, ofPrimitiveMode
 glm::vec3 ofCairoRenderer::transform(glm::vec3 vec) const{
 	if(!b3D) return vec;
 	auto vec4 = projection * modelView * glm::vec4(vec, 1.0);
-	vec = vec4.xyz() / vec4.w;
+	//vec = vec4.xyz() / vec4.w;
+	vec = glm::vec3(vec4.x,vec4.y,vec4.z) / vec4.w;
 
 	//vec.set(vec.x/vec.z*viewportRect.width*0.5-ofGetWidth()*0.5-viewportRect.x,vec.y/vec.z*viewportRect.height*0.5-ofGetHeight()*0.5-viewportRect.y);
 	vec = {vec.x/vec.z*viewportRect.width*0.5, vec.y/vec.z*viewportRect.height*0.5, 0.f};

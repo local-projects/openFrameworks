@@ -175,7 +175,8 @@ glm::vec3 ofCamera::worldToScreen(glm::vec3 WorldXYZ, ofRectangle viewport) cons
 	viewport = getViewport(viewport);
 
 	auto CameraXYZ4 = getModelViewProjectionMatrix(viewport) * glm::vec4(WorldXYZ, 1.0);
-	auto CameraXYZ = CameraXYZ4.xyz() / CameraXYZ4.w;
+	//auto CameraXYZ = CameraXYZ4.xyz() / CameraXYZ4.w;
+	auto CameraXYZ = glm::vec3(CameraXYZ4.x,CameraXYZ4.y,CameraXYZ4.z) / CameraXYZ4.w;
 	glm::vec3 ScreenXYZ;
 
 	ScreenXYZ.x = (CameraXYZ.x + 1.0f) / 2.0f * viewport.width + viewport.x;
@@ -203,14 +204,16 @@ glm::vec3 ofCamera::screenToWorld(glm::vec3 ScreenXYZ, ofRectangle viewport) con
 
 	//convert camera to world
 	auto world = inverseCamera * CameraXYZ;
-	return world.xyz() / world.w;
+	//return world.xyz() / world.w;
+	return glm::vec3(world.x,world.y,world.z) / world.w;
 
 }
 
 //----------------------------------------
 glm::vec3 ofCamera::worldToCamera(glm::vec3 WorldXYZ, ofRectangle viewport) const {
 	auto camera = getModelViewProjectionMatrix(getViewport(viewport)) * glm::vec4(WorldXYZ, 1.0);
-	return camera.xyz() / camera.w;
+	//return camera.xyz() / camera.w;
+	return glm::vec3(camera.x,camera.y,camera.z) / camera.w;
 }
 
 //----------------------------------------
@@ -218,7 +221,8 @@ glm::vec3 ofCamera::cameraToWorld(glm::vec3 CameraXYZ, ofRectangle viewport) con
 	auto inverseCamera = glm::inverse(getModelViewProjectionMatrix(getViewport(viewport)));
 
 	auto world = inverseCamera * glm::vec4(CameraXYZ, 1.0);
-	return world.xyz() / world.w;
+	//return world.xyz() / world.w;
+	return glm::vec3(world.x,world.y,world.z) / world.w;
 }
 
 //----------------------------------------

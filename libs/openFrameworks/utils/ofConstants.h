@@ -68,9 +68,18 @@ enum ofTargetPlatform{
 #include <memory>
 
 #define GLM_META_PROG_HELPERS
-#define GLM_FORCE_SWIZZLE
+//#define GLM_FORCE_MESSAGES
+//#define GLM_FORCE_SWIZZLE
 #define GLM_FORCE_SIZE_FUNC
-#include "glm/glm.hpp"
+//#include "glm/glm.hpp"
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
+#include "glm/mat3x3.hpp"
+#include "glm/mat4x4.hpp"
+//#include "glm/vec4.hpp"
+//#include "glm/common.hpp"
+
 #include "glm/ext.hpp"
 
 #ifndef OF_TARGET_IPHONE

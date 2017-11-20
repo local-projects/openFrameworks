@@ -192,7 +192,8 @@ void ofNode::setGlobalPosition(const glm::vec3& p) {
 		setPosition(p);
 	} else {
 		auto newP = glm::inverse(parent->getGlobalTransformMatrix()) * glm::vec4(p, 1.0);
-		setPosition(newP.xyz() / newP.w);
+		//setPosition(newP.xyz() / newP.w);
+		setPosition(glm::vec3(newP.x,newP.y,newP.z) / newP.w);
 	}
 }
 
@@ -436,7 +437,8 @@ void ofNode::lookAt(const glm::vec3& lookAtPosition){
 void ofNode::lookAt(const glm::vec3& lookAtPosition, glm::vec3 upVector) {
 	if(parent){
 		auto upVector4 = glm::inverse(parent->getGlobalTransformMatrix()) * glm::vec4(upVector, 1.0);
-		upVector = upVector4.xyz() / upVector4.w;
+		//upVector = upVector4.xyz() / upVector4.w;
+		upVector = glm::vec3(upVector.x,upVector.y,upVector.z) / upVector4.w;
 	}
 	auto zaxis = glm::normalize(getGlobalPosition() - lookAtPosition);
 	if (glm::length(zaxis) > 0) {
@@ -463,9 +465,18 @@ void ofNode::lookAt(const ofNode& lookAtNode, const glm::vec3& upVector) {
 
 //----------------------------------------
 void ofNode::updateAxis() {
-	if(scale->x>0) axis[0] = (getLocalTransformMatrix()[0]/scale->x).xyz();
-	if(scale->y>0) axis[1] = (getLocalTransformMatrix()[1]/scale->y).xyz();
-	if(scale->z>0) axis[2] = (getLocalTransformMatrix()[2]/scale->z).xyz();
+	if(scale->x>0){
+		auto v = (getLocalTransformMatrix()[0]/scale->x);
+		axis[0] = glm::vec3(v.x, v.y, v.z);
+	}
+	if(scale->y>0){
+		auto v = (getLocalTransformMatrix()[1]/scale->y);
+		axis[1] = glm::vec3(v.x, v.y, v.z);
+	}
+	if(scale->z>0){
+		auto v = (getLocalTransformMatrix()[2]/scale->z);
+		axis[2] = glm::vec3(v.x, v.y, v.z);
+	}
 }
 
 //----------------------------------------
@@ -556,7 +567,9 @@ glm::mat4 ofNode::getGlobalTransformMatrix() const {
 
 //----------------------------------------
 glm::vec3 ofNode::getGlobalPosition() const {
-	return getGlobalTransformMatrix()[3].xyz();
+	//return getGlobalTransformMatrix()[3].xyz();
+	auto t = getGlobalTransformMatrix()[3];
+	return glm::vec3(t.x,t.y,t.z);
 }
 
 //----------------------------------------
