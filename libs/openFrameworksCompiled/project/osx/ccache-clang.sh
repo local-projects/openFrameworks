@@ -5,7 +5,7 @@ if type -p /usr/local/bin/ccache >/dev/null 2>&1; then
   export CCACHE_HARDLINK=true
   export CCACHE_NOHASHDIR=true
   export CCACHE_SLOPPINESS=file_macro,time_macros,include_file_mtime,include_file_ctime,file_stat_matches
-  export CCACHE_BASEDIR=/Users/oriol/Desktop
+  export CCACHE_BASEDIR=~/
   exec /usr/local/bin/ccache /usr/bin/clang "$@"
 else
   exec clang "$@"
