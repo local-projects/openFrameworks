@@ -29,7 +29,7 @@ EOF
 
 download(){
     echo "Downloading $1"
-    wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
+    wget https://github.com/local-projects/OpenFrameworksLibFiles/raw/master/$1 $SILENT_ARGS
 }
 
 # trap any script errors and exit
@@ -135,7 +135,7 @@ if [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs" ]; then
 elif [ "$PLATFORM" == "msys2" ] || [ "$PLATFORM" == "vs" ]; then
     PKGS="openFrameworksLibs_${VER}_${PLATFORM}${ARCH}.zip"
 elif [ "$ARCH" == "" ] && [[ "$PLATFORM" == "osx" || "$PLATFORM" == "ios" || "$PLATFORM" == "tvos" ]]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}3.tar.bz2"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}3.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}4.tar.bz2"
 elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "android" ]; then
     PKGS="openFrameworksLibs_${VER}_${PLATFORM}armv7.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}x86.tar.bz2"
 else
