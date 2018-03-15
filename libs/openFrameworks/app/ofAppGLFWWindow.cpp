@@ -1483,6 +1483,12 @@ void ofAppGLFWWindow::resize_cb(GLFWwindow* windowP_,int w, int h) {
 	instance->currentH = h;
 	instance->events().notifyWindowResized(w*instance->pixelScreenCoordScale, h*instance->pixelScreenCoordScale);
 	instance->nFramesSinceWindowResized = 0;
+
+	//force redraw while resizing window
+	instance->update();
+	instance->draw();
+	instance->update();
+	instance->draw();
 }
 
 //--------------------------------------------
