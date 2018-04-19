@@ -11,6 +11,7 @@ public:
 	}
 
 	std::string address;
+	std::string srcAddress; //for client, what interface do you want to send from?
 	int port;
 	bool blocking = false;
 

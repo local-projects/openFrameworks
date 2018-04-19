@@ -7,7 +7,7 @@
 #include <map>
 #include <condition_variable>
 
-#define TCP_MAX_CLIENTS  32
+#define TCP_MAX_CLIENTS  100
 
 //forward decleration
 class ofxTCPClient;

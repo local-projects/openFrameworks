@@ -6,7 +6,7 @@
 #include "ofFileUtils.h"
 #include "ofTypes.h"
 
-#define TCP_MAX_MSG_SIZE 512
+#define TCP_MAX_MSG_SIZE 1024
 //#define STR_END_MSG "[/TCP]"
 //#define STR_END_MSG_LEN 6
 
@@ -82,10 +82,9 @@ class ofxTCPClient{
 		int getPort();
 		string getIP();
 
-
-
-
+		ofxTCPManager & getTCPManager(){return TCPClient;};
 private:
+
 		// private copy so this can't be copied to avoid problems with destruction
 		ofxTCPClient(const ofxTCPManager & mom){};
 		ofxTCPClient & operator=(const ofxTCPClient & mom){return *this;}
