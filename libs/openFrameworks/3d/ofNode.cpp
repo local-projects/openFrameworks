@@ -3,6 +3,7 @@
 #include "ofMath.h"
 #include "ofLog.h"
 #include "of3dGraphics.h"
+#include "ofGraphicsBaseTypes.h"
 
 //----------------------------------------
 ofNode::ofNode()
@@ -192,8 +193,7 @@ void ofNode::setGlobalPosition(const glm::vec3& p) {
 		setPosition(p);
 	} else {
 		auto newP = glm::inverse(parent->getGlobalTransformMatrix()) * glm::vec4(p, 1.0);
-		//setPosition(newP.xyz() / newP.w);
-		setPosition(glm::vec3(newP.x,newP.y,newP.z) / newP.w);
+		setPosition(glm::vec3(newP) / newP.w);
 	}
 }
 
@@ -425,8 +425,8 @@ void ofNode::lookAt(const glm::vec3& lookAtPosition){
     auto relPosition = (getGlobalPosition() - lookAtPosition);
 	auto radius = glm::length(relPosition);
     if(radius>0){
-		auto latitude = acos(relPosition.y / radius) - glm::half_pi<float>();
-		auto longitude = atan2(relPosition.x , relPosition.z);
+		float latitude = acos(relPosition.y / radius) - glm::half_pi<float>();
+		float longitude = atan2(relPosition.x , relPosition.z);
 		glm::quat q = glm::angleAxis(latitude, glm::vec3(1,0,0)) * glm::angleAxis(longitude, glm::vec3(0,1,0)) * glm::angleAxis(0.f, glm::vec3(0,0,1));
         setGlobalOrientation(q);
     }
@@ -437,17 +437,16 @@ void ofNode::lookAt(const glm::vec3& lookAtPosition){
 void ofNode::lookAt(const glm::vec3& lookAtPosition, glm::vec3 upVector) {
 	if(parent){
 		auto upVector4 = glm::inverse(parent->getGlobalTransformMatrix()) * glm::vec4(upVector, 1.0);
-		//upVector = upVector4.xyz() / upVector4.w;
-		upVector = glm::vec3(upVector.x,upVector.y,upVector.z) / upVector4.w;
+		upVector = glm::vec3(upVector4) / upVector4.w;
 	}
 	auto zaxis = glm::normalize(getGlobalPosition() - lookAtPosition);
 	if (glm::length(zaxis) > 0) {
 		auto xaxis = glm::normalize(glm::cross(upVector, zaxis));
 		auto yaxis = glm::cross(zaxis, xaxis);
-		glm::mat4 m;
-		m[0] = glm::vec4(xaxis, 0.f);
-		m[1] = glm::vec4(yaxis, 0.f);
-		m[2] = glm::vec4(zaxis, 0.f);
+		glm::mat3 m(glm::uninitialize);
+		m[0] = xaxis;
+		m[1] = yaxis;
+		m[2] = zaxis;
 
 		setGlobalOrientation(glm::toQuat(m));
 	}
@@ -465,18 +464,9 @@ void ofNode::lookAt(const ofNode& lookAtNode, const glm::vec3& upVector) {
 
 //----------------------------------------
 void ofNode::updateAxis() {
-	if(scale->x>0){
-		auto v = (getLocalTransformMatrix()[0]/scale->x);
-		axis[0] = glm::vec3(v.x, v.y, v.z);
-	}
-	if(scale->y>0){
-		auto v = (getLocalTransformMatrix()[1]/scale->y);
-		axis[1] = glm::vec3(v.x, v.y, v.z);
-	}
-	if(scale->z>0){
-		auto v = (getLocalTransformMatrix()[2]/scale->z);
-		axis[2] = glm::vec3(v.x, v.y, v.z);
-	}
+	if(scale->x>0) axis[0] = glm::vec3(getLocalTransformMatrix()[0]/scale->x);
+	if(scale->y>0) axis[1] = glm::vec3(getLocalTransformMatrix()[1]/scale->y);
+	if(scale->z>0) axis[2] = glm::vec3(getLocalTransformMatrix()[2]/scale->z);
 }
 
 //----------------------------------------
@@ -567,9 +557,7 @@ glm::mat4 ofNode::getGlobalTransformMatrix() const {
 
 //----------------------------------------
 glm::vec3 ofNode::getGlobalPosition() const {
-	//return getGlobalTransformMatrix()[3].xyz();
-	auto t = getGlobalTransformMatrix()[3];
-	return glm::vec3(t.x,t.y,t.z);
+	return glm::vec3(getGlobalTransformMatrix()[3]);
 }
 
 //----------------------------------------

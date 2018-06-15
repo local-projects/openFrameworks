@@ -10,6 +10,8 @@
 
 #include "ofGraphics.h"
 
+using namespace std;
+
 namespace{
 	template<typename Type>
 	typename std::enable_if<std::is_integral<Type>::value, Type>::type
@@ -119,14 +121,6 @@ namespace{
 
 //-----------------------------------------------------------
 template<typename Type>
-ofxInputField<Type> ofxInputField<Type>::createInsideSlider(){
-	ofxInputField<Type> input;
-	input.insideSlider = true;
-	return input;
-}
-
-//-----------------------------------------------------------
-template<typename Type>
 ofxInputField<Type>::ofxInputField(){
 }
 
@@ -151,9 +145,9 @@ ofxInputField<Type>* ofxInputField<Type>::setup(ofParameter<Type> _val, float wi
 	if(!insideSlider){
 		registerMouseEvents();
 	}
-	listeners.push_back(value.newListener(this,&ofxInputField::valueChanged));
-	listeners.push_back(ofEvents().charEvent.newListener(this, &ofxInputField<Type>::charPressed, OF_EVENT_ORDER_BEFORE_APP));
-	listeners.push_back(ofEvents().keyPressed.newListener(this, &ofxInputField<Type>::keyPressed, OF_EVENT_ORDER_BEFORE_APP));
+	listeners.push(value.newListener(this,&ofxInputField::valueChanged));
+	listeners.push(ofEvents().charEvent.newListener(this, &ofxInputField<Type>::charPressed, OF_EVENT_ORDER_BEFORE_APP));
+	listeners.push(ofEvents().keyPressed.newListener(this, &ofxInputField<Type>::keyPressed, OF_EVENT_ORDER_BEFORE_APP));
 	return this;
 }
 
@@ -806,3 +800,4 @@ template class ofxInputField<uint64_t>;
 template class ofxInputField<float>;
 template class ofxInputField<double>;
 template class ofxInputField<std::string>;
+template class ofxInputField<typename std::conditional<std::is_same<uint32_t, size_t>::value || std::is_same<uint64_t, size_t>::value, bool, size_t>::type>;

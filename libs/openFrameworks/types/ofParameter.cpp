@@ -24,6 +24,7 @@ string ofAbstractParameter::escape(const string& _str) const{
 	ofStringReplace(str, "/", "_");
 	ofStringReplace(str, "\\", "_");
 	ofStringReplace(str, ".", "_");
+	ofStringReplace(str, "#", "_");
 
 	return str;
 }
@@ -88,6 +89,10 @@ string ofParameter<void>::getName() const{
 
 std::string ofParameter<void>::toString() const{
 	return "";
+}
+
+string ofParameter<void>::valueType() const{
+	return typeid(void).name();
 }
 
 void ofParameter<void>::fromString(const std::string & name){

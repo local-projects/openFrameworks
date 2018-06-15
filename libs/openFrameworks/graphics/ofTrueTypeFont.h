@@ -1,11 +1,12 @@
 #pragma once
 
-#include <vector>
-#include "ofRectangle.h"
 #include "ofConstants.h"
+#include <unordered_map>
+#include "ofRectangle.h"
 #include "ofPath.h"
 #include "ofTexture.h"
 #include "ofMesh.h"
+#include "ofPixels.h"
 
 /// \file
 /// The ofTrueTypeFont class provides an interface to load fonts into
@@ -24,7 +25,6 @@
 /// \cond INTERNAL
 
 
-typedef ofPath ofTTFCharacter;
 typedef struct FT_FaceRec_*  FT_Face;
 
 /// \endcond
@@ -51,6 +51,7 @@ public:
 	};
 
 	static const range Space;
+	static const range IdeographicSpace;
 	static const range Latin;
 	static const range Latin1Supplement;
 	static const range Greek;
@@ -96,7 +97,11 @@ public:
 	static const range MiscSymbolsAndPictographs;
 	static const range Emoticons;
 	static const range TransportAndMap;
-
+	static const range EnclosedCharacters;
+	static const range Uncategorized;
+	static const range AdditionalEmoticons;
+	static const range AdditionalTransportAndMap;
+	static const range OtherAdditionalSymbols;
 };
 
 class ofAlphabet{
@@ -112,38 +117,38 @@ public:
 	static const std::initializer_list<ofUnicode::range> Cyrillic;
 };
 
+enum ofTrueTypeFontDirection : uint32_t {
+    OF_TTF_LEFT_TO_RIGHT,
+    OF_TTF_RIGHT_TO_LEFT
+};
+
+struct ofTrueTypeFontSettings{
+
+    std::filesystem::path     fontName;
+    int                       fontSize = 0;
+    bool                      antialiased = true;
+    bool                      contours = false;
+    float                     simplifyAmt = 0.3f;
+    int                       dpi = 0;
+    ofTrueTypeFontDirection direction = OF_TTF_LEFT_TO_RIGHT;
+    std::vector<ofUnicode::range> ranges;
+
+    ofTrueTypeFontSettings(const std::filesystem::path & name, int size)
+    :fontName(name)
+    ,fontSize(size){}
+
+    void addRanges(std::initializer_list<ofUnicode::range> alphabet){
+        ranges.insert(ranges.end(), alphabet);
+    }
+
+    void addRange(const ofUnicode::range & range){
+        ranges.push_back(range);
+    }
+};
+
 class ofTrueTypeFont{
 
 public:
-
-	struct Settings{
-
-		enum class Direction : uint32_t {
-			LeftToRight,
-			RightToLeft
-		};
-
-		std::filesystem::path    fontName;
-		int                      fontSize = 0;
-		bool                     antialiased = true;
-		bool                     contours = false;
-		float                    simplifyAmt = 0.3f;
-		int                      dpi = 0;
-		Direction                direction = Direction::LeftToRight;
-		vector<ofUnicode::range> ranges;
-
-		Settings(const std::filesystem::path & name, int size)
-		:fontName(name)
-		,fontSize(size){}
-
-		void addRanges(std::initializer_list<ofUnicode::range> alphabet){
-			ranges.insert(ranges.end(), alphabet);
-		}
-
-		void addRange(const ofUnicode::range & range){
-			ranges.push_back(range);
-		}
-	};
 
 	/// \brief Construct a default ofTrueTypeFont.
 	ofTrueTypeFont();
@@ -184,7 +189,7 @@ public:
                   float simplifyAmt=0.3f,
 				  int dpi=0);
 
-	OF_DEPRECATED_MSG("Use load instead",bool loadFont(string filename,
+	OF_DEPRECATED_MSG("Use load instead",bool loadFont(std::string filename,
                   int fontsize,
                   bool _bAntiAliased=true,
                   bool _bFullCharacterSet=false,
@@ -192,7 +197,7 @@ public:
                   float simplifyAmt=0.3f,
 				  int dpi=0));
 	
-	bool load(const Settings & settings);
+	bool load(const ofTrueTypeFontSettings & settings);
 
 	/// \brief Has the font been loaded successfully?
 	/// \returns true if the font was loaded.
@@ -339,8 +344,8 @@ public:
 	void drawStringAsShapes(const std::string& s, float x, float y) const;
 	
 	/// \todo
-	ofTTFCharacter getCharacterAsPoints(uint32_t character, bool vflip=true, bool filled=true) const;
-	vector<ofTTFCharacter> getStringAsPoints(const std::string &  str, bool vflip=true, bool filled=true) const;
+	ofPath getCharacterAsPoints(uint32_t character, bool vflip=true, bool filled=true) const;
+	std::vector<ofPath> getStringAsPoints(const std::string &  str, bool vflip=true, bool filled=true) const;
 	const ofMesh & getStringMesh(const std::string &  s, float x, float y, bool vflip=true) const;
 	const ofTexture & getFontTexture() const;
 	ofTexture getStringTexture(const std::string &  s, bool vflip=true) const;
@@ -348,16 +353,18 @@ public:
 	bool isValidGlyph(uint32_t) const;
 	/// \}
 
-	void setDirection(Settings::Direction direction);
+    /// \returns current font direction
+	void setDirection(ofTrueTypeFontDirection direction);
+
 protected:
 	/// \cond INTERNAL
 	
 	bool bLoadedOk;
 	
-	vector <ofTTFCharacter> charOutlines;
-	vector <ofTTFCharacter> charOutlinesNonVFlipped;
-	vector <ofTTFCharacter> charOutlinesContour;
-	vector <ofTTFCharacter> charOutlinesNonVFlippedContour;
+	std::vector <ofPath> charOutlines;
+	std::vector <ofPath> charOutlinesNonVFlipped;
+	std::vector <ofPath> charOutlinesContour;
+	std::vector <ofPath> charOutlinesNonVFlippedContour;
 
 	float lineHeight;
 	float ascenderHeight;
@@ -366,7 +373,6 @@ protected:
 	float letterSpacing;
 	float spaceSize;
 	float fontUnitScale;
-
 
 	struct glyphProps{
 		std::size_t characterIndex;
@@ -385,19 +391,18 @@ protected:
 		ofPixels pixels;
 	};
 
-	vector<glyphProps> cps; // properties for each character
+	std::vector<glyphProps> cps; // properties for each character
 
-	Settings settings;
-	unordered_map<uint32_t,size_t> glyphIndexMap;
-
+	ofTrueTypeFontSettings settings;
+	std::unordered_map<uint32_t,size_t> glyphIndexMap;
 
     int getKerning(uint32_t c, uint32_t prevC) const;
 	void drawChar(uint32_t c, float x, float y, bool vFlipped) const;
 	void drawCharAsShape(uint32_t c, float x, float y, bool vFlipped, bool filled) const;
-	void createStringMesh(const string & s, float x, float y, bool vFlipped) const;
+	void createStringMesh(const std::string & s, float x, float y, bool vFlipped) const;
 	glyph loadGlyph(uint32_t utf8) const;
 	const glyphProps & getGlyphProperties(uint32_t glyph) const;
-	void iterateString(const string & str, float x, float y, bool vFlipped, std::function<void(uint32_t, glm::vec2)> f) const;
+	void iterateString(const std::string & str, float x, float y, bool vFlipped, std::function<void(uint32_t, glm::vec2)> f) const;
 	size_t indexForGlyph(uint32_t glyph) const;
 
 	ofTexture texAtlas;
@@ -410,7 +415,7 @@ private:
 	friend void ofUnloadAllFontTextures();
 	friend void ofReloadAllFontTextures();
 #endif
-	shared_ptr<struct FT_FaceRec_>	face;
+	std::shared_ptr<struct FT_FaceRec_>	face;
 	static const glyphProps invalidProps;
 	void		unloadTextures();
 	void		reloadTextures();
@@ -418,5 +423,4 @@ private:
 	static void finishLibraries();
 
 	friend void ofExitCallback();
-
 };
