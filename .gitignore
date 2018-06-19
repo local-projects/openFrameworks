@@ -9,6 +9,9 @@ openFrameworksUniversal.a
 libs/openFrameworksCompiled/lib/*/*
 !libs/openFrameworksCompiled/lib/*/.gitkeep
 
+#ignore downloaded libs in ofxKinect addon
+addons/ofxKinect/libs/libusb
+
 # apothecary
 scripts/apothecary
 
