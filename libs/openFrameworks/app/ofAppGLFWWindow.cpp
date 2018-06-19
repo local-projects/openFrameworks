@@ -1545,8 +1545,6 @@ void ofAppGLFWWindow::resize_cb(GLFWwindow* windowP_, int w, int h) {
 	//force redraw while resizing window
 	instance->update();
 	instance->draw();
-	instance->update();
-	instance->draw();
 }
 
 //------------------------------------------------------------
