@@ -355,7 +355,7 @@ static bool saveImage(const ofPixels_<PixelType> & _pix, const std::filesystem::
 		return false;
 	}
 
-	ofFilePath::createEnclosingDirectory(_fileName);
+	//ofFilePath::createEnclosingDirectory(_fileName);
 	std::string fileName = ofToDataPath(_fileName);
 	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
 	fif = FreeImage_GetFileType(fileName.c_str(), 0);
