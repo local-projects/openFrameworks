@@ -358,11 +358,14 @@ static bool saveImage(const ofPixels_<PixelType> & _pix, const std::filesystem::
 	//ofFilePath::createEnclosingDirectory(_fileName);
 	std::string fileName = ofToDataPath(_fileName);
 	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
+    static std::mutex mutex;
+    mutex.lock();
 	fif = FreeImage_GetFileType(fileName.c_str(), 0);
 	if(fif == FIF_UNKNOWN) {
 		// or guess via filename
 		fif = FreeImage_GetFIFFromFilename(fileName.c_str());
 	}
+    mutex.unlock();
 	if(fif==FIF_JPEG && (_pix.getNumChannels()==4 || _pix.getBitsPerChannel() > 8)){
 		ofPixels pix3 = _pix;
 		pix3.setNumChannels(3);
