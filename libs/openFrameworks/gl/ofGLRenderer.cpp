@@ -1600,7 +1600,7 @@ void ofGLRenderer::drawString(string textString, float x, float y, float z) cons
 			glGetFloatv(GL_PROJECTION_MATRIX, glm::value_ptr(projection));
 			auto mat = matrixStack.getOrientationMatrixInverse() * projection * modelview;
 			auto dScreen4 = mat * glm::vec4(x,y,z,1.0);
-			auto dScreen = dScreen4.xyz() / dScreen4.w;
+			auto dScreen = glm::vec3(dScreen4.x,dScreen4.y,dScreen4.z) / dScreen4.w;
 			dScreen += glm::vec3(1.0) ;
 			dScreen *= 0.5;
 
