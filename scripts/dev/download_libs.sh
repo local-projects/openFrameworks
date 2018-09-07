@@ -20,7 +20,7 @@ cat << EOF
                                     vs2017: 32 or 64
                                     msys2: 32
                                     android: armv7 or x86 (if not specified will download both)
-                                    linux: 64, 64gcc5, 64gcc6, armv6l or armv7l
+                                    linux: 64gcc4, 64gcc5, 64gcc6 / 64, armv6l or armv7l
     -n, --no-overwrite          Merge new libraries with exisiting ones, use only to download same version for different platforms
                                 If not set deletes any existing libraries
     -s, --silent                Silent download progress
@@ -28,16 +28,20 @@ cat << EOF
 EOF
 }
 
-download(){
-    echo "Downloading $1"
-    wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
-}
 
+download(){
+    #echo "Downloading $1"
+    #wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
+    #use LP's copied LIBS instead of ci.openframeworks.cc as those have been updated and they create conflicts
+    echo "Downloading https://github.com/local-projects/OpenFrameworksLibFiles/raw/master/$1"
+    curl -O  https://raw.githubusercontent.com/local-projects/OpenFrameworksLibFiles/master/$1 $SILENT_ARGS
+
+}
 # trap any script errors and exit
 trap 'trapError ${LINENO}' ERR
 trap "trapError" SIGINT SIGTERM
 
-trapError() { 
+trapError() {
     local parent_lineno="$1"
     if [[ "$#" = "3" ]] ; then
         local message="$2"
@@ -47,10 +51,10 @@ trapError() {
         local code="${2:-1}"
         echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
     fi
-    
+
     if [ -e openFrameworksLibs* ]; then
         echo "removing packages"
-    	rm openFrameworksLibs*
+        rm openFrameworksLibs*
     fi
     exit "${code}"
 }
@@ -109,17 +113,17 @@ if [ "$ARCH" == "" ]; then
         if [ "$ARCH" == "x86_64" ]; then
             GCC_VERSION=$(gcc -dumpversion | cut -f1 -d.)
             if [ $GCC_VERSION -eq 4 ]; then
-                ARCH=64
-            elif [ $GCC_VERSION -eq 5]; then
+                ARCH=64gcc4
+            elif [ $GCC_VERSION -eq 5 ]; then
                 ARCH=64gcc5
             else
                 ARCH=64gcc6
             fi
-        elif [ "$ARCH" == "armv7l" ]; then 
+        elif [ "$ARCH" == "armv7l" ]; then
             # Check for Raspberry Pi
-            if [ -f /opt/vc/include/bcm_host.h ]; then 
+            if [ -f /opt/vc/include/bcm_host.h ]; then
                 ARCH=armv6l
-            fi 
+            fi
         elif [ "$ARCH" == "i686" ] || [ "$ARCH" == "i386" ]; then
             cat << EOF
 32bit linux is not officially supported anymore but compiling
@@ -133,22 +137,47 @@ EOF
     fi
 fi
 
+if [ "$PLATFORM" == "linux" ] && [ "$ARCH" == "64" ]; then
+    ARCH=64gcc6
+fi
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $SCRIPT_DIR
 
 if [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs2015" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_32.zip openFrameworksLibs_${VER}_${PLATFORM}_64.zip"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_32_1.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_32_2.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_32_3.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_32_4.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_1.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_2.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_3.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_4.zip"
 elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs2017" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_32.zip openFrameworksLibs_${VER}_${PLATFORM}_64.zip"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_32_1.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_32_2.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_32_3.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_32_4.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_1.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_2.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_3.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_64_4.zip"
 elif [ "$PLATFORM" == "msys2" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}.zip"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_.zip"
 elif [ "$PLATFORM" == "vs2015" ] || [ "$PLATFORM" == "vs2017" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}.zip"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_1.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_2.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_3.zip \
+          openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_4.zip"
 elif [ "$ARCH" == "" ] && [[ "$PLATFORM" == "osx" || "$PLATFORM" == "ios" || "$PLATFORM" == "tvos" ]]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}3.tar.bz2"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 \
+          openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2 \
+          openFrameworksLibs_${VER}_${PLATFORM}3.tar.bz2 \
+          openFrameworksLibs_${VER}_${PLATFORM}4.tar.bz2"
 elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "android" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}armv7.tar.bz2 openFrameworksLibs_${VER}_${PLATFORM}x86.tar.bz2"
-else
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}armv7.tar.bz2 \
+          openFrameworksLibs_${VER}_${PLATFORM}x86.tar.bz2"
+else # Linux
     PKGS="openFrameworksLibs_${VER}_${PLATFORM}${ARCH}.tar.bz2"
 fi
 
@@ -181,7 +210,13 @@ for PKG in $PKGS; do
     fi
 done
 
-if [[ "$PLATFORM" == "osx" || "$PLATFORM" == "ios" || "$PLATFORM" == "tvos" ]]; then
+if [ "$PLATFORM" == "osx" ]; then
+    addonslibs=("opencv" "ippicv" "libusb" "assimp" "libxml2" "svgtiny" "poco" "openssl")
+    addons=("ofxOpenCv" "ofxOpenCv" "ofxKinect" "ofxAssimpModelLoader" "ofxSvg" "ofxSvg" "ofxPoco" "ofxPoco")
+elif [ "$PLATFORM" == "vs2015" ] || [ "$PLATFORM" == "vs2017" ]; then
+    addonslibs=("opencv" "ippicv" "libusb" "assimp" "libxml2" "svgtiny" "poco")
+    addons=("ofxOpenCv" "ofxOpenCv" "ofxKinect" "ofxAssimpModelLoader" "ofxSvg" "ofxSvg" "ofxPoco")
+elif [ "$PLATFORM" == "ios" ] || [ "$PLATFORM" == "tvos" ]; then
     addonslibs=("opencv" "ippicv" "assimp" "libxml2" "svgtiny" "poco" "openssl")
     addons=("ofxOpenCv" "ofxOpenCv" "ofxAssimpModelLoader" "ofxSvg" "ofxSvg" "ofxPoco" "ofxPoco")
 else
@@ -201,4 +236,3 @@ for ((i=0;i<${#addonslibs[@]};++i)); do
         rm -rf ${addonslibs[i]}
     fi
 done
-
