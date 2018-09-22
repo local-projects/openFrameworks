@@ -33,7 +33,7 @@ download(){
     #echo "Downloading $1"
     #wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
     #use LP's copied LIBS instead of ci.openframeworks.cc as those have been updated and they create conflicts
-    echo "Downalding https://github.com/local-projects/OpenFrameworksLibFiles/raw/master/$1"
+    echo "Downloading https://github.com/local-projects/OpenFrameworksLibFiles/raw/master/$1"
     curl -O  https://raw.githubusercontent.com/local-projects/OpenFrameworksLibFiles/master/$1 $SILENT_ARGS
 
 }
@@ -236,3 +236,12 @@ for ((i=0;i<${#addonslibs[@]};++i)); do
         rm -rf ${addonslibs[i]}
     fi
 done
+
+#manually copying updated JSON lib. This LP project (hpbm) requires an updates nlohmann json lib, but the 
+#lib itself is hosted within the downloaded zips. To fix this, we run the download libs scripts as normal,
+#and afterwards we manually replace the lib in the expected location with an updated file of the lib that 
+#is embedded in the repo itself in repo/libs/jsonUpdated/
+
+echo "Replacing JSON lib with an updated version..."
+rm json/include/json.hpp
+cp jsonUpdated/json.hpp json/include/json.hpp
