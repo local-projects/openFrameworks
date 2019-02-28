@@ -42,5 +42,5 @@ CLANG_CXX_LIBRARY = libc++
 CLANG_CXX_LANGUAGE_STANDARD = c++11
 
 /// add ccache to the build system! speeds up compile times by caching!
-CC = $(OF_PATH)/libs/openFrameworksCompiled/project/ios/ccache-clang.sh
-CXX = $(OF_PATH)/libs/openFrameworksCompiled/project/ios/ccache-clang++.sh
+//CC = $(OF_PATH)/libs/openFrameworksCompiled/project/ios/ccache-clang.sh
+//CXX = $(OF_PATH)/libs/openFrameworksCompiled/project/ios/ccache-clang++.sh

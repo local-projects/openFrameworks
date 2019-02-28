@@ -313,9 +313,9 @@ int ofxTCPManager::WaitSend(time_t timeoutSeconds, time_t timeoutMicros){
 //--------------------------------------------------------------------------------
 bool ofxTCPManager::SetNonBlocking(bool useNonBlocking)
 {
-	if(useNonBlocking==nonBlocking){
-		return true;
-	}
+	//if(useNonBlocking==nonBlocking){
+		//return true;
+	//}
     auto prevNonBlocking = nonBlocking;
     nonBlocking = useNonBlocking;
 

@@ -33,6 +33,9 @@ MSYS2_ROOT = /mingw32
 PLATFORM_CFLAGS += -std=gnu++14 -DUNICODE -D_UNICODE
 #PLATFORM_CFLAGS += -IC:/msys64/mingw32/include/gstreamer-1.0 -DOF_VIDEO_PLAYER_GSTREAMER
 PLATFORM_LDFLAGS += -lpthread
+ifndef DEBUG
+	PLATFORM_LDFLAGS += -mwindows
+endif
 #ifeq ($(PLATFORM_ARCH),x86_64)
 ifdef USE_CCACHE
 	CC = ccache $(MSYS2_ROOT)/bin/gcc
@@ -54,6 +57,12 @@ PLATFORM_PROJECT_RELEASE_BIN_NAME=$(APPNAME).exe
 PLATFORM_PROJECT_RELEASE_TARGET = bin/$(PLATFORM_PROJECT_RELEASE_BIN_NAME)
 PLATFORM_PROJECT_DEBUG_TARGET = bin/$(PLATFORM_PROJECT_DEBUG_BIN_NAME)
 PLATFORM_RUN_COMMAND = cd bin;./$(BIN_NAME)
+ifneq ("$(wildcard $(PLATFORM_PROJECT_RELEASE_TARGET))","")
+	PLATFORM_PROJECT_EXISTING_TARGET=$(PLATFORM_PROJECT_RELEASE_TARGET)
+else
+	PLATFORM_PROJECT_EXISTING_TARGET=$(PLATFORM_PROJECT_DEBUG_TARGET)
+endif
+
 
 ##########################################################################################
 # PLATFORM DEFINES
@@ -282,7 +291,7 @@ PLATFORM_LIBRARY_SEARCH_PATHS =
 copy_dlls:
 	@echo "     copying dlls to bin"
 
-	@ntldd --recursive $(PLATFORM_PROJECT_RELEASE_TARGET) | grep -F "mingw32" | cut -d">" -f2 |cut -d" " -f2 >dlllist
+	@ntldd --recursive $(PLATFORM_PROJECT_EXISTING_TARGET) | grep -F "mingw32" | cut -d">" -f2 |cut -d" " -f2 >dlllist
 	@while read -r dll; do \
 		test -e "$$dll" && cp "$$dll" ./bin; \
     done <dlllist
