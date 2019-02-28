@@ -67,6 +67,9 @@ ofxGuiGroup * ofxGuiGroup::setup(const ofParameterGroup & _parameters, const std
 		}else if(type == typeid(ofParameter <uint16_t> ).name()){
 			auto p = _parameters.get<uint16_t>(i);
 			add(p);
+		}else if(type == typeid(ofParameter <size_t> ).name()){
+			auto p = _parameters.get<size_t>(i);
+			add(p);
 		}else if(type == typeid(ofParameter <float> ).name()){
 			auto p = _parameters.getFloat(i);
 			add(p);
@@ -97,9 +100,14 @@ ofxGuiGroup * ofxGuiGroup::setup(const ofParameterGroup & _parameters, const std
 		}else if(type == typeid(ofParameter <ofFloatColor> ).name()){
 			auto p = _parameters.getFloatColor(i);
 			add(p);
-		}else if(type == typeid(ofParameter <string> ).name()){
-			auto p = _parameters.getString(i);
-			add(p);
+		}else if(_parameters[i].valueType() == typeid(string).name()){
+			if(_parameters[i].isReadOnly()){
+				auto p = _parameters.get(i).castReadOnly<std::string, void>();
+				add(p);
+			}else{
+				auto p = _parameters.getString(i);
+				add(p);
+			}
 		}else if(type == typeid(ofParameterGroup).name()){
 			auto p = _parameters.getGroup(i);
 			ofxGuiGroup * panel = new ofxGuiGroup(p);
@@ -386,7 +394,7 @@ bool ofxGuiGroup::setValue(float mx, float my, bool bCheck){
 		if(b.inside(mx, my)){
 			bGuiActive = true;
 
-			ofRectangle minButton(b.x + b.width - textPadding * 3, b.y, textPadding * 3, header);
+			ofRectangle minButton(b.x, b.y, b.width, header);
 			if(minButton.inside(mx, my)){
 				minimized = !minimized;
 				if(minimized){
@@ -475,7 +483,6 @@ void ofxGuiGroup::sizeChangedCB(){
 	}
 	setNeedsRedraw();
 }
-
 
 std::size_t ofxGuiGroup::getNumControls() const {
 	return collection.size();
