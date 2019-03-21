@@ -22,7 +22,7 @@ ofxVecSlider_<VecType> * ofxVecSlider_<VecType>::setup(ofParameter<VecType> valu
     VecType min = value.getMin();
     VecType max = value.getMax();
     
-	for (int i=0; i<dim(); i++) {
+	for (size_t i = 0; i < dim(); i++) {
     	ofParameter<float> p(names[i], val[i], min[i], max[i]);
         add(new ofxSlider<float>(p, width, height));
         p.addListener(this, & ofxVecSlider_::changeSlider);
@@ -55,7 +55,7 @@ void ofxVecSlider_<VecType>::changeValue(VecType & value){
     if (sliderChanging){
         return;
     }
-	for (int i=0; i<dim(); i++){
+	for (size_t i = 0; i < dim(); i++){
         parameters[i].template cast<float>() = value[i];
     }
 }
@@ -143,7 +143,12 @@ ofxColorSlider_<ColorType> * ofxColorSlider_<ColorType>::setup(ofParameter<ofCol
         add(new ofxSlider<ColorType>(p, width, height));
         p.addListener(this, & ofxColorSlider_::changeSlider);
 		collection[i]->setFillColor(value.get());
-		collection[i]->setTextColor(p / p.getMax() > 0.75 ? ofFloatColor(0.) : ofFloatColor(1.));
+        float range = p.getMax()-p.getMin();
+        if(range == 0){
+            collection[i]->setTextColor( ofFloatColor(0.));
+        }else{
+            collection[i]->setTextColor( p/range > 0.75 ? ofFloatColor(0.) : ofFloatColor(1.));
+        }
     }
 	add(&picker);
 	picker.getParameter().template cast<ofColor_<ColorType>>().addListener(this, & ofxColorSlider_::changeValue);
@@ -174,7 +179,12 @@ void ofxColorSlider_<ColorType>::changeSlider(const void * parameter, ColorType 
     for (int i=0; i<4; i++){
 		collection[i]->setFillColor(data);
 		auto p = parameters[i].template cast<ColorType>();
-		collection[i]->setTextColor(p / p.getMax() > 0.75 ? ofFloatColor(0.) : ofFloatColor(1.));
+        float range = p.getMax()-p.getMin();
+        if(range == 0){
+            collection[i]->setTextColor( ofFloatColor(0.));
+        }else{
+            collection[i]->setTextColor( p/range > 0.75 ? ofFloatColor(0.) : ofFloatColor(1.));
+        }
 	}
     sliderChanging = false;
 }
@@ -188,7 +198,12 @@ void ofxColorSlider_<ColorType>::changeValue(ofColor_<ColorType> & value){
         parameters[i].template cast<ColorType>() = value[i];
     	collection[i]->setFillColor(value);
 		auto p = parameters[i].template cast<ColorType>();
-		collection[i]->setTextColor(p / p.getMax() > 0.75 ? ofFloatColor(0.) : ofFloatColor(1.));
+        float range = p.getMax()-p.getMin();
+        if(range == 0){
+            collection[i]->setTextColor( ofFloatColor(0.));
+        }else{
+            collection[i]->setTextColor( p/range > 0.75 ? ofFloatColor(0.) : ofFloatColor(1.));
+        }
 	}
 }
 

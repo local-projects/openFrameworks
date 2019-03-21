@@ -28,15 +28,14 @@ cat << EOF
 EOF
 }
 
-
 download(){
     #echo "Downloading $1"
     #wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
-    #use LP's copied LIBS instead of ci.openframeworks.cc as those have been updated and they create conflicts
-    echo "Downalding https://github.com/local-projects/OpenFrameworksLibFiles/raw/master/$1"
-    curl -O  https://raw.githubusercontent.com/local-projects/OpenFrameworksLibFiles/master/$1 $SILENT_ARGS
-
+    #use LP's copied LIBS instead of ci.openframeworks.cc to avoid depending on OF's servers
+    echo "Downloading https://github.com/local-projects/OpenFrameworksLibFiles/raw/master/$1"
+    curl -O  https://raw.githubusercontent.com/local-projects/OpenFrameworksLibFiles/master/0.10.1/$1 $SILENT_ARGS
 }
+
 # trap any script errors and exit
 trap 'trapError ${LINENO}' ERR
 trap "trapError" SIGINT SIGTERM

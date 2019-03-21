@@ -9,6 +9,8 @@
 #include "html5audio.h"
 #include "ofUtils.h"
 
+using namespace std;
+
 vector<float> ofxEmscriptenSoundPlayer::systemSpectrum;
 
 int ofxEmscriptenAudioContext(){
@@ -160,7 +162,7 @@ float ofxEmscriptenSoundPlayer::getPan() const{
 }
 
 bool ofxEmscriptenSoundPlayer::isLoaded() const{
-	return sound!=-1;
+	return html5audio_sound_is_loaded(sound);
 }
 
 float ofxEmscriptenSoundPlayer::getVolume() const{

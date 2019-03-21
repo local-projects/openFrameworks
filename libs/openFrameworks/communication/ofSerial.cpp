@@ -1,6 +1,6 @@
 #include "ofSerial.h"
 #include "ofUtils.h"
-#include "ofTypes.h"
+#include "ofLog.h"
 
 #if defined( TARGET_OSX ) || defined( TARGET_LINUX )
 	#include <sys/ioctl.h>
@@ -13,6 +13,9 @@
 #include <errno.h>
 #include <ctype.h>
 #include <algorithm>
+#include <cstring>
+
+using namespace std;
 
 #ifdef TARGET_LINUX
 	#include <linux/serial.h>
@@ -218,6 +221,7 @@ void ofSerial::buildDeviceList(){
 //----------------------------------------------------------------
 void ofSerial::listDevices(){
 	buildDeviceList();
+
 	for(auto & device: devices){
 		ofLogNotice("ofSerial") << "[" << device.getDeviceID() << "] = "<< device.getDeviceName().c_str();
 	}

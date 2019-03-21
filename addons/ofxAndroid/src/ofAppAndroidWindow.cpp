@@ -19,7 +19,6 @@
 #include "ofFileUtils.h"
 #include "ofGLProgrammableRenderer.h"
 #include "ofGLRenderer.h"
-#include "ofBaseTypes.h"
 using namespace std;
 
 static bool paused=true;
@@ -84,20 +83,24 @@ jclass ofGetJavaOFAndroid(){
 	return ofGetJNIEnv()->FindClass("cc/openframeworks/OFAndroid");
 }
 
+jclass ofGetOFLifeCycle(){
+	return ofGetJNIEnv()->FindClass("cc/openframeworks/OFAndroidLifeCycle");
+}
+
 jobject ofGetOFActivityObject(){
 	JNIEnv * env = ofGetJNIEnv();
 	if(!env) return NULL;
 
-	jclass OFAndroid = ofGetJavaOFAndroid();
-	if(!OFAndroid) return NULL;
+	jclass OFLifeCycle = ofGetOFLifeCycle();
+	if(!OFLifeCycle) return NULL;
 
-	jfieldID ofActivityID = env->GetStaticFieldID(OFAndroid,"ofActivity","Lcc/openframeworks/OFActivity;");
+	jfieldID ofActivityID = env->GetStaticFieldID(OFLifeCycle,"m_activity","Lcc/openframeworks/OFActivity;");
 	if(!ofActivityID){
 		ofLogError("ofAppAndroidWindow") << "couldn't get field ID for ofActivity";
 		return NULL;
 	}
 
-	return env->GetStaticObjectField(OFAndroid,ofActivityID);
+	return env->GetStaticObjectField(OFLifeCycle,ofActivityID);
 }
 
 
@@ -233,6 +236,11 @@ shared_ptr<ofBaseRenderer> & ofAppAndroidWindow::renderer(){
 	return currentRenderer;
 }
 
+int ofAppAndroidWindow::getGlesVersion()
+{
+	return glesVersion;
+}
+
 extern "C"{
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved)
@@ -320,15 +328,15 @@ Java_cc_openframeworks_OFAndroid_onSurfaceCreated( JNIEnv*  env, jclass  thiz ){
 		window->renderer()->popStyle();
 
 	}else{
-
-	    if(window->renderer()->getType()==ofGLProgrammableRenderer::TYPE)
-	    {
-	    	static_cast<ofGLProgrammableRenderer*>(window->renderer().get())->setup(2,0);
-	    }
-	    else
-	    {
-	    	static_cast<ofGLRenderer*>(window->renderer().get())->setup();
-	    }
+		int glesVersion = window->getGlesVersion();
+		if( glesVersion < 2 )
+		{
+			static_cast<ofGLRenderer*>(window->renderer().get())->setup();
+		}
+		else
+		{
+			static_cast<ofGLProgrammableRenderer*>(window->renderer().get())->setup(glesVersion,0);
+		}
 	}
 
 	surfaceDestroyed = false;

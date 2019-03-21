@@ -1,55 +1,63 @@
 #pragma once
 
-#include "ofBaseApp.h"
-
+#include "ofConstants.h"
 #include "ofAppBaseWindow.h"
 #include "ofThread.h"
 #include "ofImage.h"
-#include "ofBaseTypes.h"
 #include "ofEvents.h"
-#include "ofConstants.h"
-#include "ofTypes.h"
+#include "ofRectangle.h"
 
-// include includes for both native and X11 possibilities
-#include <libudev.h>
-#include <stdbool.h>
-#include <stdio.h> // sprintf
-#include <stdlib.h>  // malloc
-#include <math.h>
-#include <fcntl.h>  // open fcntl
-#include <unistd.h> // read close 
-#include <linux/joystick.h>
-
-#include "linux/kd.h"	// keyboard stuff...
-#include "termios.h"
-#include "sys/ioctl.h"
-
-#include <dirent.h>  // scandir
-#include <string.h> // strlen
-
-// x11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 
 #include <queue>
 #include <map>
+#include <X11/Xlib.h>
 
-#include <EGL/egl.h>
-
-// TODO: this shold be passed in with the other window settings, like window alpha, etc.
 enum ofAppEGLWindowType {
 	OF_APP_WINDOW_AUTO,
 	OF_APP_WINDOW_NATIVE,
 	OF_APP_WINDOW_X11
 };
 
-typedef map<EGLint,EGLint> ofEGLAttributeList;
-typedef map<EGLint,EGLint>::iterator ofEGLAttributeListIterator;
+typedef std::map<EGLint,EGLint> ofEGLAttributeList;
+typedef std::map<EGLint,EGLint>::iterator ofEGLAttributeListIterator;
+
+typedef struct _XIM * XIM;
+typedef struct _XIC * XIC;
+typedef unsigned long Window;
+struct _XDisplay;
+typedef struct _XDisplay Display;
+
+typedef unsigned int EGLBoolean;
+typedef int32_t EGLint;
+typedef void *EGLDisplay;
+typedef void *EGLConfig;
+typedef void *EGLSurface;
+typedef void *EGLContext;
+
+struct ofAppEGLWindowSettings: public ofGLESWindowSettings {
+public:
+	ofAppEGLWindowType eglWindowPreference; ///< what window type is preferred?
+	EGLint eglWindowOpacity; ///< 0-255 window alpha value
+
+	ofEGLAttributeList frameBufferAttributes;
+	// surface creation
+	ofEGLAttributeList windowSurfaceAttributes;
+
+	ofColor initialClearColor;
+
+	int screenNum;
+	int layer;
+
+	ofAppEGLWindowSettings();
+	ofAppEGLWindowSettings(const ofGLESWindowSettings & settings);
+};
 
 class ofAppEGLWindow : public ofAppBaseGLESWindow, public ofThread {
 public:
 
-	struct Settings;
+	/// ofAppEGLWindow::Settings is currently deprecated in favor of
+	/// the ofAppEGLWindowSettings struct
+	typedef ofAppEGLWindowSettings Settings;
 
 	ofAppEGLWindow();
 	virtual ~ofAppEGLWindow();
@@ -61,7 +69,7 @@ public:
 	static void pollEvents();
 
 	using ofAppBaseGLESWindow::setup;
-	void setup(const Settings & settings);
+	void setup(const ofAppEGLWindowSettings & settings);
 	void setup(const ofGLESWindowSettings & settings);
 
 	void update();
@@ -73,7 +81,7 @@ public:
 	void finishRender();
 
 	ofCoreEvents & events();
-	shared_ptr<ofBaseRenderer> & renderer();
+	std::shared_ptr<ofBaseRenderer> & renderer();
 
 	void setThreadTimeout(long timeOut){ threadTimeout = timeOut; }
 
@@ -95,7 +103,7 @@ public:
 	virtual int	getWidth();
 	virtual int	getHeight();
 
-	virtual void setWindowTitle(string title); // TODO const correct
+	virtual void setWindowTitle(std::string title); // TODO const correct
 
 	virtual ofWindowMode getWindowMode();
 
@@ -106,24 +114,6 @@ public:
 	virtual void disableSetupScreen();
 
 	virtual void setVerticalSync(bool enabled);
-	
-	struct Settings: public ofGLESWindowSettings {
-		public:
-		ofAppEGLWindowType eglWindowPreference;  // what window type is preferred?
-		EGLint eglWindowOpacity; // 0-255 window alpha value
-
-		ofEGLAttributeList frameBufferAttributes;
-		// surface creation
-		ofEGLAttributeList windowSurfaceAttributes;
-
-		ofColor initialClearColor;
-
-		int screenNum;
-		int layer;
-
-		Settings();
-		Settings(const ofGLESWindowSettings & settings);
-	};
 
 	EGLDisplay getEglDisplay() const;
 	EGLSurface getEglSurface() const;
@@ -159,18 +149,18 @@ protected:
 	bool bEnableSetupScreen;  ///< \brief This indicates the need/intent to draw a setup screen.
 	bool bShowCursor;  ///< \brief Indicate the visibility of the (mouse) cursor.
 
-	string eglDisplayString;
+	std::string eglDisplayString;
 	int nFramesSinceWindowResized;  ///< \brief The number of frames passed/shown since the window got resized.
 	ofOrientation orientation;
 
 
 	void threadedFunction();
-	queue<ofMouseEventArgs> mouseEvents;
-	queue<ofKeyEventArgs>   keyEvents;
+	std::queue<ofMouseEventArgs> mouseEvents;
+	std::queue<ofKeyEventArgs>   keyEvents;
 	void checkEvents();
 	ofImage mouseCursor;
 
-	// TODO: getters and setters?  OR automatically set based on 
+	// TODO: getters and setters?  OR automatically set based on
 	// OS or screen size?  Should be changed when screen is resized?
 	float mouseScaleX;  ///< \brief Amount by which to mouse movements along the X axis.
 	float mouseScaleY;  ///< \brief Amount by which to mouse movements along the Y axis.
@@ -180,10 +170,17 @@ protected:
 	// void setMouseScaleX(float x);
 	// float getMouseScaleY() const;
 	// void setMouseScaleY(float y);
-	
+
+	// For absolute input devices that send ABS_X and ABS_Y events, we want to store
+	// information about the min and max axis values.
+	int mouseAbsXMin;
+	int mouseAbsXMax;
+	int mouseAbsYMin;
+	int mouseAbsYMax;
+
 	bool hasMouse() { return mouseDetected; }
 	bool hasKeyboard() { return keyboardDetected; }
-	
+
 
 //------------------------------------------------------------
 // EGL
@@ -206,7 +203,7 @@ protected:
 //------------------------------------------------------------
 // PLATFORM SPECIFIC WINDOWING
 //------------------------------------------------------------
-	
+
 //------------------------------------------------------------
 // WINDOWING
 //------------------------------------------------------------
@@ -241,7 +238,7 @@ protected:
 	DISPMANX_CLAMP_T  dispman_clamp;
 	DISPMANX_TRANSFORM_T dispman_transform;
 	VC_DISPMANX_ALPHA_T	dispman_alpha;
-	
+
 	bool createRPiNativeWindow(const ofRectangle& requestedWindowRect);
 
 #else
@@ -254,7 +251,7 @@ protected:
 	Window x11Window;
 	long x11ScreenNum;  ///< \brief The number of the X11 screen is in use (currently).
 	bool createX11NativeWindow(const ofRectangle& requestedWindowRect);
-	 
+
 //------------------------------------------------------------
 // EVENTS
 //------------------------------------------------------------
@@ -263,7 +260,7 @@ protected:
 
 	void setupNativeUDev();
 	void destroyNativeUDev();
-	
+
 	void setupNativeMouse();
 	void setupNativeKeyboard();
 
@@ -277,12 +274,12 @@ protected:
 	static void handleX11Event(const XEvent& event);
 
 private:
-	Settings settings;
+	ofAppEGLWindowSettings settings;
 	int glesVersion;  ///< \brief Indicate the version of OpenGL for Embedded Systems.
 	bool keyboardDetected;
 	bool mouseDetected;
 	long threadTimeout;
 	ofCoreEvents coreEvents;
-	shared_ptr<ofBaseRenderer> currentRenderer;
+	std::shared_ptr<ofBaseRenderer> currentRenderer;
 	static ofAppEGLWindow * instance;
 };

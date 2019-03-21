@@ -50,7 +50,7 @@ public class OFAndroidLifeCycle
 	private static AtomicBoolean m_isWorkerDone = new AtomicBoolean(true);
 	private static AtomicBoolean m_isInit = new AtomicBoolean(false);
 
-	private static Activity m_activity = null;
+	private static OFActivity m_activity = null;
 	
 	private static int m_countActivities = 0;
 	private static ArrayList<Runnable> m_initializers = new ArrayList<Runnable>();
@@ -209,7 +209,7 @@ public class OFAndroidLifeCycle
 		});
 	}
 	
-	static Activity getActivity(){
+	static OFActivity getActivity(){
 		return OFAndroidLifeCycle.m_activity;
 	}
 	
@@ -221,7 +221,7 @@ public class OFAndroidLifeCycle
 		mGLView = null;
 	}
 	
-	public static void setActivity(Activity activity){
+	public static void setActivity(OFActivity activity){
 		m_activity = activity;
 		activity.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		OFAndroidObject.setActivity(activity);
@@ -262,18 +262,25 @@ public class OFAndroidLifeCycle
 	}
 	
 	static String TAG = "OF";
-	
+		
 	public static void glCreate()
-	{
+	{	
 		Log.d(TAG, "glCreate");
+		
+		if(m_countActivities == 0)
+			pushState(State.create);
+		m_countActivities++;
+	}
+	
+	public static void glCreateSurface()
+	{
 		if(mGLView == null)
 		{
 			Log.d(TAG, "Create surface");
 			mGLView = new OFGLSurfaceView(m_activity);
+			
+			glResume( getActivity().getSurfaceContainer() );
 		}
-		if(m_countActivities == 0)
-			pushState(State.create);
-		m_countActivities++;
 	}
 	
 	public static void glResume(ViewGroup glContainer)
@@ -281,14 +288,17 @@ public class OFAndroidLifeCycle
 		Log.d(TAG, "glResume");
 		
 		OFGLSurfaceView glView = getGLView();
-		glView.setVisibility(View.INVISIBLE);
+		if( glView != null )
+		{
+			glView.setVisibility(View.INVISIBLE);
+				
+			glContainer.addView(glView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+			Log.d(TAG, "addView surface");
 			
-		glContainer.addView(glView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		Log.d(TAG, "addView surface");
-		
-		glView.onResume();
-		
-		pushState(State.resume);
+			glView.onResume();
+			
+			pushState(State.resume);
+		}
 	}
 	
 	public static void glPause()
@@ -296,17 +306,19 @@ public class OFAndroidLifeCycle
 		Log.d(TAG, "glPause");
 		
 		OFGLSurfaceView glView = getGLView();
-		
-		glView.onPause();
-		
-		ViewGroup parent = (ViewGroup)glView.getParent();
-		
-		if(parent != null){
-			Log.d(TAG, "remove surface");
-			parent.removeView(glView);
+		if( glView != null )
+		{
+			glView.onPause();
+			
+			ViewGroup parent = (ViewGroup)glView.getParent();
+			
+			if(parent != null){
+				Log.d(TAG, "remove surface");
+				parent.removeView(glView);
+			}
+			
+			pushState(State.pause);
 		}
-		
-		pushState(State.pause);
 	}
 	
 	public static void glDestroy()

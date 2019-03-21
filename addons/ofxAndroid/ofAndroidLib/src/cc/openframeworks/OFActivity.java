@@ -1,7 +1,11 @@
 package cc.openframeworks;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -15,6 +19,10 @@ public abstract class OFActivity extends Activity{
 	
 	//gesture handler member
 	private ViewGroup mOFGlSurfaceContainer;
+	
+	public ViewGroup getSurfaceContainer(){
+		return mOFGlSurfaceContainer;
+	}
 	
 	public void initView(){  
 		String packageName = this.getPackageName();
@@ -42,6 +50,8 @@ public abstract class OFActivity extends Activity{
 	        this.setContentView(mOFGlSurfaceContainer);
 		}
 	}
+
+
 	
 	@Override
 	protected void onCreate(Bundle arg0) {

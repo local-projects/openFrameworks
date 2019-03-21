@@ -17,6 +17,8 @@
 #include "ofxAndroidUtils.h"
 #endif
 
+using namespace std;
+
 
 static const string COLOR_ATTRIBUTE="color";
 static const string POSITION_ATTRIBUTE="position";
@@ -217,7 +219,7 @@ bool ofShader::loadCompute(const std::filesystem::path& shaderName) {
 #endif
 
 //--------------------------------------------------------------
-bool ofShader::setup(const Settings & settings) {
+bool ofShader::setup(const ofShaderSettings & settings) {
 	for (auto shader : settings.shaderFiles) {
 		auto ty = shader.first;
 		auto file = shader.second;
@@ -1398,6 +1400,7 @@ void ofShader::printActiveUniforms()  const{
 		line << " @ index " << location;
 		ofLogNotice("ofShader") << line.str();
 	}
+	delete[] uniformName;
 }
 
 //--------------------------------------------------------------
