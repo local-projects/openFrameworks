@@ -461,12 +461,31 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
 	if(texData.textureTarget == GL_TEXTURE_2D){
 #endif
 
-        if (texData.compressionType != OF_COMPRESS_NONE) {
-            texData.glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-        }
+        bool isCompressed = 	texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+							texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
+							texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 
-		glBindTexture(texData.textureTarget,texData.textureID);
-		glTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, glFormat, pixelType, 0);  // init to black...
+        glBindTexture(texData.textureTarget,texData.textureID);
+        if(!isCompressed){
+            glTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, glFormat, pixelType, 0);  // init to black...
+        }else{
+            size_t dataSize;
+
+            if(texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT){ //DXT1 compression ratio is 8:1
+                dataSize = texData.tex_w * texData.tex_h / 2; //RGBA x 2 becomes one byte, 8:1
+            }else{ //DXT3 and DXT5 compression ratio is 4:1
+                dataSize = texData.tex_w * texData.tex_h; //RGBA becomes one byte, 4:1
+            }
+
+			glCompressedTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, dataSize/*data len*/, 0);
+            GLuint err = glGetError(); //needed for some users to clear gl errors
+            if(err != GL_NO_ERROR){
+                ofLogError("ofTexture") << "Err allocating compressed ofTexture: " << err;
+                if(((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0){
+                		ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
+                }
+            }
+        }
 
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_MAG_FILTER, texData.magFilter);
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_MIN_FILTER, texData.minFilter);
@@ -681,8 +700,24 @@ void ofTexture::loadData(const void * data, int w, int h, int glFormat, int glTy
 	
 	// bind texture
 	glBindTexture(texData.textureTarget, (GLuint) texData.textureID);
-	//update the texture image:
-	glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
+
+	bool isCompressed = 	texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+						texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
+						texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+	if(!isCompressed){
+		//update the texture image:
+		glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
+	}else{
+		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, w * h/*data len*/, data);
+        GLuint err = glGetError(); //needed for some users to clear gl errors
+        if(err != GL_NO_ERROR){
+            ofLogError("ofTexture") << "Err loading compressed ofTexture: " << err;
+            if(((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0){
+            		ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
+            }
+        }
+	}
 	// unbind texture target by binding 0
 	glBindTexture(texData.textureTarget, 0);
 	
