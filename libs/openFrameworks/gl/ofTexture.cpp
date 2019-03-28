@@ -478,7 +478,7 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
             }
 
 			glCompressedTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, dataSize/*data len*/, 0);
-            GLuint err = glGetError(); //needed for some users to clear gl errors
+            GLuint err = glGetError();
             if(err != GL_NO_ERROR){
                 ofLogError("ofTexture") << "Err allocating compressed ofTexture: " << err;
                 if(((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0){
@@ -710,7 +710,7 @@ void ofTexture::loadData(const void * data, int w, int h, int glFormat, int glTy
 		glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
 	}else{
 		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, w * h/*data len*/, data);
-        GLuint err = glGetError(); //needed for some users to clear gl errors
+        GLuint err = glGetError();
         if(err != GL_NO_ERROR){
             ofLogError("ofTexture") << "Err loading compressed ofTexture: " << err;
             if(((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0){
