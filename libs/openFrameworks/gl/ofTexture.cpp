@@ -461,13 +461,20 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
 	if(texData.textureTarget == GL_TEXTURE_2D){
 #endif
 
+        #ifndef TARGET_OPENGLES
         bool isCompressed = 	texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
 							texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
 							texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 
+        #endif
+
         glBindTexture(texData.textureTarget,texData.textureID);
+
+		#ifndef TARGET_OPENGLES
         if(!isCompressed){
+		#endif
             glTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, glFormat, pixelType, 0);  // init to black...
+        #ifndef TARGET_OPENGLES
         }else{
             size_t dataSize;
 
@@ -486,6 +493,7 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
                 }
             }
         }
+        #endif
 
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_MAG_FILTER, texData.magFilter);
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_MIN_FILTER, texData.minFilter);
@@ -701,13 +709,16 @@ void ofTexture::loadData(const void * data, int w, int h, int glFormat, int glTy
 	// bind texture
 	glBindTexture(texData.textureTarget, (GLuint) texData.textureID);
 
+    #ifndef TARGET_OPENGLES
 	bool isCompressed = 	texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
 						texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
 						texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 
 	if(!isCompressed){
+    #endif
 		//update the texture image:
 		glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
+    #ifndef TARGET_OPENGLES
 	}else{
 		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, w * h/*data len*/, data);
         GLuint err = glGetError();
@@ -718,6 +729,8 @@ void ofTexture::loadData(const void * data, int w, int h, int glFormat, int glTy
             }
         }
 	}
+    #endif
+    
 	// unbind texture target by binding 0
 	glBindTexture(texData.textureTarget, 0);
 	
