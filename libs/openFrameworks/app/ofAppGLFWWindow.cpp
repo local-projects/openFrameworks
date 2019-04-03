@@ -1560,8 +1560,9 @@ void ofAppGLFWWindow::resize_cb(GLFWwindow* windowP_, int w, int h) {
 	instance->nFramesSinceWindowResized = 0;
 
 	//force redraw while resizing window
-	instance->update();
-	instance->draw();
+    //this creates problems when you use ofSetWindowShape during setup(), disabling for now
+	//instance->update();
+	//instance->draw();
 }
 
 //------------------------------------------------------------
