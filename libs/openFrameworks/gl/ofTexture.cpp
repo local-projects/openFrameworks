@@ -720,10 +720,11 @@ void ofTexture::loadData(const void * data, int w, int h, int glFormat, int glTy
 		glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
     #ifndef TARGET_OPENGLES
 	}else{
-		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, w * h/*data len*/, data);
+		std::size_t dataLen = std::size_t((texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT) ? w * h / 2 : w * h);
+		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, dataLen, data);
         GLuint err = glGetError();
         if(err != GL_NO_ERROR){
-            ofLogError("ofTexture") << "Err loading compressed ofTexture: " << err;
+            ofLogError("ofTexture") << "Error loading compressed ofTexture: " << err;
             if(((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0){
             		ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
             }
