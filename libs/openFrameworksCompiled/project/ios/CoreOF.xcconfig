@@ -28,6 +28,9 @@ LIB_CURL = "$(OF_PATH)/libs/curl/lib/ios/curl.a"
 LIB_URIPARSER = "$(OF_PATH)/libs/uriparser/lib/ios/uriparser.a"
 LIB_PUGIXML = "$(OF_PATH)/libs/pugixml/lib/ios/pugixml.a"
 
+LIB_OF = "$(OF_PATH)/libs/openFrameworksCompiled/lib/ios/libofxiOS_iphoneos_Release.a"
+LIB_OF_DEBUG = "$(OF_PATH)/libs/openFrameworksCompiled/lib/ios/libofxiOS_iphoneos_Debug.a"
+
 
 MISC_FLAGS = "-ObjC"
 
