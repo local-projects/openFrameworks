@@ -213,8 +213,8 @@ bool ofFmodSoundPlayer::load(const std::filesystem::path& _fileName, bool stream
 	// [3] load sound
 
 	//choose if we want streaming
-	int fmodFlags =  FMOD_SOFTWARE;
-	if(stream)fmodFlags =  FMOD_SOFTWARE | FMOD_CREATESTREAM;
+	int fmodFlags =  FMOD_SOFTWARE | FMOD_ACCURATETIME;
+	if(stream)fmodFlags =  FMOD_SOFTWARE | FMOD_ACCURATETIME | FMOD_CREATESTREAM;
 
     result = FMOD_System_CreateSound(sys, fileName.data(),  fmodFlags, nullptr, &sound);
 
