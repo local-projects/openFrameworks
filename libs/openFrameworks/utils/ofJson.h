@@ -1,6 +1,6 @@
 #pragma once
 
-#include "json.hpp"
+#include "jsonModified.hpp"
 #include "ofParameter.h"
 
 // for convenience
