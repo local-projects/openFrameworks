@@ -64,7 +64,14 @@ bool ofxOscReceiver::start() {
 	// create socket
 	osc::UdpListeningReceiveSocket *socket = nullptr;
 	try{
-		osc::IpEndpointName name(osc::IpEndpointName::ANY_ADDRESS, settings.port);
+		osc::IpEndpointName name;
+		if(settings.rxAddress.size() == 0){
+			name = osc::IpEndpointName(osc::IpEndpointName::ANY_ADDRESS, settings.port);
+		}else{
+			ofLogNotice("ofxOscReceiver") << "Setting up this ofxOscReceiver to only RX at " << settings.rxAddress;
+			name = osc::IpEndpointName(settings.rxAddress.c_str(), settings.port);
+		}
+
 		socket = new osc::UdpListeningReceiveSocket(name, this, settings.reuse);
 		auto deleter = [](osc::UdpListeningReceiveSocket*socket){
 			// tell the socket to shutdown

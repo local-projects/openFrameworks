@@ -16,6 +16,7 @@ struct ofxOscReceiverSettings {
 	int port = 0;            ///< port to listen on
 	bool reuse = true;       ///< should the port be reused by other receivers?
 	bool start = true;       ///< start listening after setup?
+	std::string rxAddress; 	 ///leave blank for ANY_ADDRESS, specify an IP if you only want to listen to this particular IP
 };
 
 /// \class ofxOscReceiver
