@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -15,6 +16,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.hardware.SensorManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -23,6 +25,8 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.MulticastLock;
 import android.os.Build;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.ScaleGestureDetector;
@@ -33,80 +37,100 @@ import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
+import java.util.concurrent.Semaphore;
 
 public class OFAndroid {
-	
+
+	public static String packageName;
 	// List based on http://bit.ly/NpkL4Q
-	private static final String[] mExternalStorageDirectories = new String[] { 
-			"/mnt/sdcard-ext", 
-			"/mnt/sdcard/external_sd", 
-			"/sdcard/sd", 
-			"/mnt/external_sd", 
-			"/emmc",  
-			"/mnt/sdcard/bpemmctest", 
-			"/mnt/sdcard/_ExternalSD",  
+	private static final String[] mExternalStorageDirectories = new String[] {
+			"/mnt/sdcard-ext",
+			"/mnt/sdcard/external_sd",
+			"/sdcard/sd",
+			"/mnt/external_sd",
+			"/emmc",
+			"/mnt/sdcard/bpemmctest",
+			"/mnt/sdcard/_ExternalSD",
 			"/mnt/Removable/MicroSD",
 			"/Removable/MicroSD",
 			"/sdcard"};
-		
+
 	private static String getPackageName(){
 		return OFAndroidLifeCycle.getActivity().getPackageName();
 	}
-	
+
+	public static boolean checkPermission(String permission){
+		if (ContextCompat.checkSelfPermission(OFAndroidLifeCycle.getActivity(), permission)
+				== PackageManager.PERMISSION_GRANTED) {
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	public static void requestPermission(String permission){
+		if (ContextCompat.checkSelfPermission(OFAndroidLifeCycle.getActivity(), permission)
+				!= PackageManager.PERMISSION_GRANTED) {
+
+			ActivityCompat.requestPermissions(OFAndroidLifeCycle.getActivity(),
+					new String[]{permission}, 0);
+		}
+	}
+
 	public static String getRealExternalStorageDirectory(Context context)
-	{				
+	{
 		// Standard way to get the external storage directory
-		String externalPath = context.getExternalFilesDir(null).getPath();	
-		File SDCardDir = new File(externalPath);		
-    	if(SDCardDir.exists() && SDCardDir.canWrite()) {		
+		String externalPath = context.getExternalFilesDir(null).getPath();
+		File SDCardDir = new File(externalPath);
+    	if(SDCardDir.exists() && SDCardDir.canWrite()) {
     		return externalPath;
     	}
-		
+
 		// This checks if any of the directories from mExternalStorageDirectories exist, if it does, it uses that one instead
 		for(int i = 0; i < mExternalStorageDirectories.length; i++)
 		{
-			//Log.i("OF", "Checking: " + mExternalStorageDirectories[i]);	
-			SDCardDir = new File(mExternalStorageDirectories[i]);		
-	    	if(SDCardDir.exists() && SDCardDir.canWrite()) {				
+			//Log.i("OF", "Checking: " + mExternalStorageDirectories[i]);
+			SDCardDir = new File(mExternalStorageDirectories[i]);
+	    	if(SDCardDir.exists() && SDCardDir.canWrite()) {
 	    		externalPath = mExternalStorageDirectories[i];	// Found writable location
 				break;
-	    	}	    	
+	    	}
 		}
-		
+
 		Log.i("OF", "Using storage location: " + externalPath);
-		return externalPath;		
+		return externalPath;
 	}
-	
+
 	public static String getOldExternalStorageDirectory(String packageName)
-	{				
+	{
 		// Standard way to get the external storage directory
-		String externalPath = Environment.getExternalStorageDirectory().getPath();	
-		File SDCardDir = new File(externalPath);		
-    	if(SDCardDir.exists() && SDCardDir.canWrite()) {		
+		String externalPath = Environment.getExternalStorageDirectory().getPath();
+		File SDCardDir = new File(externalPath);
+    	if(SDCardDir.exists() && SDCardDir.canWrite()) {
     		return externalPath + "/Android/data/"+packageName;
     	}
-		
+
 		// This checks if any of the directories from mExternalStorageDirectories exist, if it does, it uses that one instead
 		for(int i = 0; i < mExternalStorageDirectories.length; i++)
 		{
-			//Log.i("OF", "Checking: " + mExternalStorageDirectories[i]);	
-			SDCardDir = new File(mExternalStorageDirectories[i]);		
-	    	if(SDCardDir.exists() && SDCardDir.canWrite()) {				
+			//Log.i("OF", "Checking: " + mExternalStorageDirectories[i]);
+			SDCardDir = new File(mExternalStorageDirectories[i]);
+	    	if(SDCardDir.exists() && SDCardDir.canWrite()) {
 	    		externalPath = mExternalStorageDirectories[i];	// Found writable location
 				break;
-	    	}	    	
+	    	}
 		}
-		
+
 		Log.i("OF", "Using storage location: " + externalPath);
 		return externalPath + "/Android/data/"+packageName;
 	}
-	
+
 	public static void moveOldData(String src, String dst){
 		File srcFile = new File(src);
 		File dstFile = new File(dst);
-		
+
 		if(srcFile.equals(dstFile)) return;
-		
+
 		if(srcFile.isDirectory() && srcFile.listFiles().length>1){
 			for(File f: srcFile.listFiles()){
 				if(f.equals(dstFile)){
@@ -116,6 +140,10 @@ public class OFAndroid {
 				f.renameTo(new File(dst+"/"+f.getName()));
 			}
 		}
+	}
+
+	public static Context getContext(){
+		return OFAndroidLifeCycle.getActivity();
 	}
 	
 	public static String getAppDataDirectory(){
@@ -369,7 +397,7 @@ public class OFAndroid {
 		
 		return canSaveExternal;
 	}
-	
+
 	public static void onActivityResult(int requestCode, int resultCode,Intent intent){
 
 		synchronized (OFAndroidObject.ofObjects) {
@@ -489,7 +517,7 @@ public class OFAndroid {
 	
 	static MulticastLock mcLock;
 	public static void enableMulticast(){
-		WifiManager wifi = (WifiManager)OFAndroidLifeCycle.getActivity().getSystemService( Context.WIFI_SERVICE );
+		WifiManager wifi = (WifiManager)OFAndroidLifeCycle.getActivity().getApplicationContext().getSystemService( Context.WIFI_SERVICE );
 		if(wifi != null)
 		{
 		    mcLock = wifi.createMulticastLock("mylock");
@@ -795,13 +823,22 @@ public class OFAndroid {
 	
 	public static void setupGL(int version){	
 		final int finalversion = version;
+		final Semaphore mutex = new Semaphore( 0 );
+		
 		runOnMainThread(new Runnable() {
-			
 			@Override
 			public void run() {
 		        OFEGLConfigChooser.setGLESVersion(finalversion);
+		        OFAndroidLifeCycle.glCreateSurface();
+		        mutex.release();
 			}
 		});
+		
+		try{
+			mutex.acquire();
+		} catch( Exception ex ){
+			Log.w( "OF", "setupGL mutex acquire failed" );
+		}
 	}
 	
 	/**
@@ -834,5 +871,7 @@ public class OFAndroid {
 		int unicodeChar = event.getUnicodeChar();
 		return onKeyUp(keyCode, unicodeChar);
 	}
+
+
 }
 

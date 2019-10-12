@@ -1,9 +1,9 @@
 #include "ofMaterial.h"
 #include "ofConstants.h"
-#include "ofGLUtils.h"
 #include "ofLight.h"
 #include "ofGLProgrammableRenderer.h"
-#include "ofAppRunner.h"
+
+using namespace std;
 
 std::map<ofGLProgrammableRenderer*, std::map<std::string, std::weak_ptr<ofMaterial::Shaders>>> ofMaterial::shadersMap;
 
@@ -24,7 +24,7 @@ void ofMaterial::setColors(ofFloatColor oDiffuse, ofFloatColor oAmbient, ofFloat
 }
 
 
-void ofMaterial::setup(const ofMaterial::Settings & settings){
+void ofMaterial::setup(const ofMaterialSettings & settings){
 	if(settings.customUniforms != data.customUniforms || settings.postFragment != data.postFragment){
 		shaders.clear();
 		uniforms1f.clear();
@@ -83,7 +83,7 @@ ofFloatColor ofMaterial::getEmissiveColor()const {
 	return data.emissive;
 }
 
-ofMaterial::Settings ofMaterial::getSettings() const{
+ofMaterialSettings ofMaterial::getSettings() const{
     return data;
 }
 
@@ -221,6 +221,12 @@ void ofMaterial::updateMaterial(const ofShader & shader,ofGLProgrammableRenderer
 	for (auto & uniform : uniforms4i) {
 		shader.setUniform4i(uniform.first, uniform.second.x, uniform.second.y, uniform.second.z, uniform.second.w);
 	}
+	for (auto & uniform : uniforms4m) {
+		shader.setUniformMatrix4f(uniform.first, uniform.second);
+	}
+	for (auto & uniform : uniforms3m) {
+		shader.setUniformMatrix3f(uniform.first, uniform.second);
+	}
 	for (auto & uniform : uniformstex) {
 		shader.setUniformTexture(uniform.first,
 								 uniform.second.textureTarget,
@@ -252,30 +258,30 @@ void ofMaterial::updateLights(const ofShader & shader,ofGLProgrammableRenderer &
 		}
 
 		if(light->lightType==OF_LIGHT_SPOT){
-			auto direction = toGlm(light->position).xyz() + light->direction;
-			auto direction4 = renderer.getCurrentViewMatrix() * glm::vec4(direction,1.0);
-			direction = direction4.xyz() / direction4.w;
-			direction = direction - lightEyePosition.xyz();
+			glm::vec3 direction = glm::vec3(light->position) + light->direction;
+			glm::vec4 direction4 = renderer.getCurrentViewMatrix() * glm::vec4(direction,1.0);
+			direction = glm::vec3(direction4) / direction4.w;
+			direction = direction - glm::vec3(lightEyePosition);
 			shader.setUniform3f("lights["+idx+"].spotDirection", glm::normalize(direction));
 			shader.setUniform1f("lights["+idx+"].spotExponent", light->exponent);
 			shader.setUniform1f("lights["+idx+"].spotCutoff", light->spotCutOff);
 			shader.setUniform1f("lights["+idx+"].spotCosCutoff", cos(ofDegToRad(light->spotCutOff)));
 		}else if(light->lightType==OF_LIGHT_DIRECTIONAL){
-			auto halfVector = glm::normalize(glm::vec4(0.f, 0.f, 1.f, 0.f) + lightEyePosition);
-			shader.setUniform3f("lights["+idx+"].halfVector", halfVector.xyz());
+			glm::vec3 halfVector(glm::normalize(glm::vec4(0.f, 0.f, 1.f, 0.f) + lightEyePosition));
+			shader.setUniform3f("lights["+idx+"].halfVector", halfVector);
 		}else if(light->lightType==OF_LIGHT_AREA){
 			shader.setUniform1f("lights["+idx+"].width", light->width);
 			shader.setUniform1f("lights["+idx+"].height", light->height);
-			auto direction = light->position.xyz() + light->direction;
-			auto direction4 = renderer.getCurrentViewMatrix() * glm::vec4(direction, 1.0);
-			direction = direction4.xyz() / direction4.w;
-			direction = direction - lightEyePosition.xyz();
+			glm::vec3 direction = glm::vec3(light->position) + light->direction;
+			glm::vec4 direction4 = renderer.getCurrentViewMatrix() * glm::vec4(direction, 1.0);
+			direction = glm::vec3(direction4) / direction4.w;
+			direction = direction - glm::vec3(lightEyePosition);
 			shader.setUniform3f("lights["+idx+"].spotDirection", glm::normalize(direction));
-			auto right = toGlm(light->position).xyz() + light->right;
-			auto right4 = renderer.getCurrentViewMatrix() * glm::vec4(right, 1.0);
-			right = right4.xyz() / right4.w;
-			right = right - lightEyePosition.xyz();
-			auto up = glm::cross(toGlm(right), direction);
+			glm::vec3 right = glm::vec3(light->position) + light->right;
+			glm::vec4 right4 = renderer.getCurrentViewMatrix() * glm::vec4(right, 1.0);
+			right = glm::vec3(right4) / right4.w;
+			right = right - glm::vec3(lightEyePosition);
+			auto up = glm::cross(right, direction);
 			shader.setUniform3f("lights["+idx+"].right", glm::normalize(toGlm(right)));
 			shader.setUniform3f("lights["+idx+"].up", glm::normalize(up));
 		}
@@ -314,6 +320,14 @@ void ofMaterial::setCustomUniform4i(const std::string & name, glm::tvec4<int> va
 	uniforms4i[name] = value;
 }
 
+void ofMaterial::setCustomUniformMatrix4f(const std::string & name, glm::mat4 value){
+	uniforms4m[name] = value;
+}
+
+void ofMaterial::setCustomUniformMatrix3f(const std::string & name, glm::mat3 value){
+	uniforms3m[name] = value;
+}
+
 void ofMaterial::setCustomUniformTexture(const std::string & name, const ofTexture & value, int textureLocation){
 	uniformstex[name] = {value.getTextureData().textureTarget, int(value.getTextureData().textureID), textureLocation};
 }
@@ -330,10 +344,14 @@ namespace{
         header += "#define MAX_LIGHTS " + ofToString(max(1,maxLights)) + "\n";
         if(hasTexture){
             header += "#define HAS_TEXTURE 1\n";
-        }
+		} else {
+			header += "#define HAS_TEXTURE 0\n";
+		}
         if(hasColor){
             header += "#define HAS_COLOR 1\n";
-        }
+		} else {
+			header += "#define HAS_COLOR 0\n";
+		}
         return header;
     }
 

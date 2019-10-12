@@ -1,6 +1,7 @@
 #include "ofxTCPManager.h"
 #include <stdio.h>
 #include "ofxNetworkUtils.h"
+#include "ofUtils.h"
 
 //--------------------------------------------------------------------------------
 bool ofxTCPManager::m_bWinsockInit= false;
@@ -144,7 +145,7 @@ bool ofxTCPManager::Listen(int iMaxConnections)
 	return ret;
 }
 
-bool ofxTCPManager::Bind(unsigned short usPort)
+bool ofxTCPManager::Bind(unsigned short usPort, bool bReuse)
 {
 	struct sockaddr_in local;
 	memset(&local, 0, sizeof(sockaddr_in));
@@ -153,6 +154,14 @@ bool ofxTCPManager::Bind(unsigned short usPort)
 	local.sin_addr.s_addr = INADDR_ANY;
 	//Port MUST be in Network Byte Order
 	local.sin_port = htons(usPort);
+
+	if (bReuse) {
+		int enable = 1;
+		if (setsockopt(m_hSocket,SOL_SOCKET,SO_REUSEADDR,(char*)&enable,sizeof(int)) < 0){
+			ofxNetworkCheckError();
+			return false;
+		}
+	}
 
 	if (::bind(m_hSocket,(struct sockaddr*)&local,sizeof(local))){
 		ofxNetworkCheckError();
@@ -282,9 +291,9 @@ int ofxTCPManager::WaitSend(time_t timeoutSeconds, time_t timeoutMicros){
 //--------------------------------------------------------------------------------
 bool ofxTCPManager::SetNonBlocking(bool useNonBlocking)
 {
-	if(useNonBlocking==nonBlocking){
-		return true;
-	}
+	//if(useNonBlocking==nonBlocking){
+		//return true;
+	//}
     auto prevNonBlocking = nonBlocking;
     nonBlocking = useNonBlocking;
 

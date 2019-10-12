@@ -1,6 +1,8 @@
 #include "ofXml.h"
 #include "ofUtils.h"
 
+using namespace std;
+
 ofXml::ofXml()
 :doc(new pugi::xml_document){
 	xml = doc->root();
@@ -21,6 +23,10 @@ bool ofXml::load(const std::filesystem::path & file){
 	}else{
 		return false;
 	}
+}
+
+bool ofXml::load(const ofBuffer & buffer){
+	return parse(buffer.getText());
 }
 
 bool ofXml::parse(const std::string & xmlStr){
@@ -44,6 +50,11 @@ bool ofXml::save(const std::filesystem::path & file) const{
 		}
 	}
 	return false;
+}
+
+void ofXml::clear(){
+	doc.reset(new pugi::xml_document);
+	xml = doc->root();
 }
 
 std::string ofXml::toString(const std::string & indent) const{
@@ -85,6 +96,10 @@ ofXml ofXml::appendChild(ofXml && xml){
 ofXml ofXml::prependChild(ofXml && xml){
 	return ofXml(doc, this->xml.prepend_move(xml.xml));
 }
+
+bool ofXml::removeChild(ofXml && node){
+	return xml.remove_child(node.xml);
+}
 #endif
 
 ofXml ofXml::appendChild(const std::string & name){
@@ -105,6 +120,10 @@ ofXml ofXml::insertChildBefore(const std::string & name, const ofXml & before){
 
 bool ofXml::removeChild(const std::string & name){
 	return xml.remove_child(name.c_str());
+}
+
+bool ofXml::removeChild(const ofXml & node){
+	return xml.remove_child(node.xml);
 }
 
 ofXml ofXml::getNextSibling() const{
@@ -131,13 +150,16 @@ ofXml ofXml::getLastChild() const{
 	return ofXml(doc, this->xml.last_child());
 }
 
+ofXml ofXml::getParent() const {
+	return ofXml(doc, this->xml.parent());
+}
 
 ofXml::Attribute ofXml::getAttribute(const std::string & name) const{
 	return this->xml.attribute(name.c_str());
 }
 
-ofXml::Range<ofXmlIterator<pugi::xml_attribute_iterator>> ofXml::getAttributes() const{
-	return ofXml::Range<ofXmlIterator<pugi::xml_attribute_iterator>>(doc, this->xml.attributes());
+ofXml::Range<ofXmlAttributeIterator> ofXml::getAttributes() const{
+	return ofXml::Range<ofXmlAttributeIterator>(doc, this->xml.attributes());
 }
 
 ofXml::Attribute ofXml::getFirstAttribute() const{
@@ -149,17 +171,28 @@ ofXml::Attribute ofXml::getLastAttribute() const{
 }
 
 ofXml::Attribute ofXml::appendAttribute(const std::string & name){
-	if(xml==doc->document_element()){
-		xml = doc->append_child(pugi::node_element);
-	}
 	return this->xml.append_attribute(name.c_str());
 }
 
 ofXml::Attribute ofXml::prependAttribute(const std::string & name){
-	if(xml==doc->document_element()){
-		xml = doc->append_child(pugi::node_element);
-	}
 	return this->xml.prepend_attribute(name.c_str());
+}
+
+bool ofXml::removeAttribute(const std::string & name){
+	auto attr = getAttribute(name);
+	if(attr){
+		return xml.remove_attribute(attr.attr);
+	}else{
+		return false;
+	}
+}
+
+bool ofXml::removeAttribute(const ofXml::Attribute & attr){
+	return xml.remove_attribute(attr.attr);
+}
+
+bool ofXml::removeAttribute(ofXml::Attribute && attr){
+	return xml.remove_attribute(attr.attr);
 }
 
 ofXml ofXml::findFirst(const std::string & path) const{
@@ -181,6 +214,10 @@ ofXml::Search ofXml::find(const std::string & path) const{
 
 std::string ofXml::getValue() const{
 	return this->xml.text().as_string();
+}
+
+std::string ofXml::getName() const{
+	return this->xml.name();
 }
 
 void ofXml::setName(const std::string & name){
@@ -228,6 +265,10 @@ std::string ofXml::Attribute::getValue() const{
 
 void ofXml::Attribute::setName(const std::string & name){
 	this->attr.set_name(name.c_str());
+}
+
+std::string ofXml::Attribute::getName() const{
+	return this->attr.name();
 }
 
 int ofXml::Attribute::getIntValue() const{

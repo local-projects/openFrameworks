@@ -1,7 +1,6 @@
 #include "ofPath.h"
-#include "ofAppRunner.h"
-#include "ofTessellator.h"
-#include "ofVectorMath.h"
+
+using namespace std;
 
 #if defined(TARGET_EMSCRIPTEN)
 	ofTessellator ofPath::tessellator;
@@ -18,6 +17,12 @@ ofPath::Command::Command(Type type)
 ofPath::Command::Command(Type type , const glm::vec3 & p)
 :type(type)
 ,to(p)
+,cp1(glm::vec3())
+,cp2(glm::vec3())
+,radiusX(0)
+,radiusY(0)
+,angleBegin(0)
+,angleEnd(0)
 {}
 
 //----------------------------------------------------------
@@ -26,6 +31,10 @@ ofPath::Command::Command(Type type , const glm::vec3 & p, const glm::vec3 & cp1,
 ,to(p)
 ,cp1(cp1)
 ,cp2(cp2)
+,radiusX(0)
+,radiusY(0)
+,angleBegin(0)
+,angleEnd(0)
 {
 }
 
@@ -33,6 +42,8 @@ ofPath::Command::Command(Type type , const glm::vec3 & p, const glm::vec3 & cp1,
 ofPath::Command::Command(Type type , const glm::vec3 & centre, float radiusX, float radiusY, float angleBegin, float angleEnd)
 :type(type)
 ,to(centre)
+,cp1(glm::vec3())
+,cp2(glm::vec3())
 ,radiusX(radiusX)
 ,radiusY(radiusY)
 ,angleBegin(angleBegin)
@@ -53,7 +64,6 @@ ofPath::ofPath(){
 	bHasChanged = false;
 	bUseShapeColor = true;
 	bNeedsPolylinesGeneration = false;
-	cachedTessellationValid = true;
 	clear();
 }
 
@@ -214,6 +224,11 @@ void ofPath::arc(const glm::vec2 & centre, float radiusX, float radiusY, float a
 //----------------------------------------------------------
 void ofPath::arc(const glm::vec3 & centre, float radiusX, float radiusY, float angleBegin, float angleEnd){
 	if(mode==COMMANDS){
+		//addCommand adds a moveTo if one hasn't been set, but in this case it is adding a moveTo to the center of the arc and not the beginning of the arc
+		if(commands.empty() || commands.back().type==Command::close){
+			glm::vec3 start = centre + glm::vec3( glm::cos( glm::radians(angleBegin) ) * radiusX, glm::sin( glm::radians(angleBegin) ) * radiusY, 0.0f );
+			commands.push_back(Command(Command::moveTo,start));
+		}
 		addCommand(Command(Command::arc,centre,radiusX,radiusY,angleBegin,angleEnd));
 	}else{
 		lastPolyline().arc(centre,radiusX,radiusY,angleBegin,angleEnd,circleResolution);
@@ -239,6 +254,10 @@ void ofPath::arc(float x, float y, float z, float radiusX, float radiusY, float 
 //----------------------------------------------------------
 void ofPath::arcNegative(const glm::vec3 & centre, float radiusX, float radiusY, float angleBegin, float angleEnd){
 	if(mode==COMMANDS){
+		if(commands.empty() || commands.back().type==Command::close){
+			glm::vec3 start = centre + glm::vec3( glm::cos( glm::radians(angleBegin) ) * radiusX, glm::sin( glm::radians(angleBegin) ) * radiusY, 0.0f );
+			commands.push_back(Command(Command::moveTo,start));
+		}
 		addCommand(Command(Command::arcNegative,centre,radiusX,radiusY,angleBegin,angleEnd));
 	}else{
 		lastPolyline().arcNegative(centre,radiusX,radiusY,angleBegin,angleEnd,circleResolution);
@@ -292,6 +311,7 @@ void ofPath::circle(float x, float y, float radius){
 
 //----------------------------------------------------------
 void ofPath::circle(float x, float y, float z, float radius){
+	moveTo(x + radius, y, z);
 	arc(x,y,z,radius,radius,0,360);
 }
 
@@ -506,7 +526,7 @@ void ofPath::setPolyWindingMode(ofPolyWindingMode newMode){
 void ofPath::setFilled(bool hasFill){
 	if(bFill != hasFill){
 		bFill = hasFill;
-		if(!cachedTessellationValid) bNeedsTessellation = true;
+		bNeedsTessellation = true;
 	}
 }
 
@@ -608,17 +628,15 @@ void ofPath::generatePolylinesFromCommands(){
 
 		bNeedsPolylinesGeneration = false;
 		bNeedsTessellation = true;
-		cachedTessellationValid=false;
 	}
 }
 
 //----------------------------------------------------------
 void ofPath::tessellate(){
 	generatePolylinesFromCommands();
-	if(!bNeedsTessellation) return;
+	if(!bNeedsTessellation || polylines.empty() || std::all_of(polylines.begin(), polylines.end(), [](const ofPolyline & p) {return p.getVertices().empty();})) return;
 	if(bFill){
 		tessellator.tessellateToMesh( polylines, windingMode, cachedTessellation);
-		cachedTessellationValid=true;
 	}
 	if(hasOutline() && windingMode!=OF_POLY_WINDING_ODD){
 		tessellator.tessellateToPolylines( polylines, windingMode, tessellatedContour);
@@ -679,7 +697,7 @@ void ofPath::setMode(Mode _mode){
 }
 
 //----------------------------------------------------------
-ofPath::Mode ofPath::getMode(){
+ofPath::Mode ofPath::getMode() const {
 	return mode;
 }
 
@@ -790,40 +808,60 @@ void ofPath::translate(const glm::vec2 & p){
 }
 
 //----------------------------------------------------------
-void ofPath::rotate(float az, const glm::vec3& axis ){
-	auto radians = ofDegToRad(az);
-	if(mode==COMMANDS){
-		for(int j=0;j<(int)commands.size();j++){
-			commands[j].to = glm::rotate(commands[j].to, radians, axis);
-			if(commands[j].type==Command::bezierTo || commands[j].type==Command::quadBezierTo){
-				commands[j].cp1 = glm::rotate(commands[j].cp1, radians, axis);
-				commands[j].cp2 = glm::rotate(commands[j].cp2, radians, axis);
-			}
-			if(commands[j].type==Command::arc || commands[j].type==Command::arcNegative){
-				commands[j].angleBegin += az;
-				commands[j].angleEnd += az;
-			}
-		}
-	}else{
-		for(int i=0;i<(int)polylines.size();i++){
-			for(int j=0;j<(int)polylines[i].size();j++){
-				polylines[i][j] = glm::rotate(toGlm(polylines[i][j]), radians, axis);
-			}
-		}
-	}
-	flagShapeChanged();
+
+void ofPath::rotateDeg(float degrees, const glm::vec3& axis ){
+    auto radians = ofDegToRad(degrees);
+    if(mode==COMMANDS){
+        for(int j=0;j<(int)commands.size();j++){
+            commands[j].to = glm::rotate(commands[j].to, radians, axis);
+            if(commands[j].type==Command::bezierTo || commands[j].type==Command::quadBezierTo){
+                commands[j].cp1 = glm::rotate(commands[j].cp1, radians, axis);
+                commands[j].cp2 = glm::rotate(commands[j].cp2, radians, axis);
+            }
+            if(commands[j].type==Command::arc || commands[j].type==Command::arcNegative){
+                commands[j].angleBegin += degrees;
+                commands[j].angleEnd += degrees;
+            }
+        }
+    }else{
+        for(int i=0;i<(int)polylines.size();i++){
+            for(int j=0;j<(int)polylines[i].size();j++){
+                polylines[i][j] = glm::rotate(toGlm(polylines[i][j]), radians, axis);
+            }
+        }
+    }
+    flagShapeChanged();
 }
 
 //----------------------------------------------------------
-void ofPath::rotate(float az, const glm::vec2& axis ){
-	rotate(az, glm::vec3(axis, 0.0));
+void ofPath::rotateRad(float radians, const glm::vec3& axis ){
+    rotateDeg(ofRadToDeg(radians), axis);
 }
 
+//----------------------------------------------------------
+void ofPath::rotate(float degrees, const glm::vec3& axis ){
+    rotateDeg(degrees, axis);
+}
+
+//----------------------------------------------------------
+void ofPath::rotate(float degrees, const glm::vec2& axis ){
+    rotateDeg(degrees, glm::vec3(axis, 0.0));
+}
+
+//----------------------------------------------------------
+void ofPath::rotateDeg(float degrees, const glm::vec2& axis){
+    rotateDeg(degrees, glm::vec3(axis, 0.0));
+}
+
+//----------------------------------------------------------
+void ofPath::rotateRad(float radians, const glm::vec2& axis){
+    rotateRad(radians, glm::vec3(axis, 0.0));
+}
 
 //----------------------------------------------------------
 void ofPath::scale(float x, float y){
 	if(mode==COMMANDS){
-		for(int j=0;j<(int)commands.size();j++){
+        for(std::size_t j=0;j<commands.size();j++){
 			commands[j].to.x*=x;
 			commands[j].to.y*=y;
 			if(commands[j].type==Command::bezierTo || commands[j].type==Command::quadBezierTo){
@@ -838,8 +876,8 @@ void ofPath::scale(float x, float y){
 			}
 		}
 	}else{
-		for(int i=0;i<(int)polylines.size();i++){
-			for(int j=0;j<(int)polylines[i].size();j++){
+		for(std::size_t i=0;i<polylines.size();i++){
+			for(std::size_t j=0;j<polylines[i].size();j++){
 				polylines[i][j].x*=x;
 				polylines[i][j].y*=y;
 			}

@@ -3,6 +3,7 @@
 
 #include "ofxSlider.h"
 #include "ofxButton.h"
+#include "ofxLabel.h"
 #include "ofParameterGroup.h"
 #include "ofParameter.h"
 
@@ -25,6 +26,11 @@ class ofxGuiGroup : public ofxBaseGui {
 		void add(ofParameter <void> & parameter);
 		void add(ofParameter <bool> & parameter);
 		void add(ofParameter <std::string> & parameter);
+
+		template<typename F>
+		void add(ofReadOnlyParameter <std::string, F> & parameter){
+			add(new ofxLabel(parameter));
+		}
 		void add(ofParameter <ofVec2f> & parameter);
 		void add(ofParameter <ofVec3f> & parameter);
 		void add(ofParameter <ofVec4f> & parameter);
@@ -34,11 +40,13 @@ class ofxGuiGroup : public ofxBaseGui {
 		void add(ofParameter <ofColor> & parameter);
 		void add(ofParameter <ofShortColor> & parameter);
 		void add(ofParameter <ofFloatColor> & parameter);
+		void add(ofParameter <ofRectangle> & parameter);
 
 		void minimize();
 		void maximize();
 		void minimizeAll();
 		void maximizeAll();
+		bool isMinimized() const;
 
 		void setWidthElements(float w);
 
@@ -61,20 +69,27 @@ class ofxGuiGroup : public ofxBaseGui {
 		ofxToggle & getToggle(const std::string& name);
 		ofxButton & getButton(const std::string& name);
 		ofxGuiGroup & getGroup(const std::string& name);
-
+	
 		ofxBaseGui * getControl(const std::string& name);
 		ofxBaseGui * getControl(std::size_t num);
 
 		virtual ofAbstractParameter & getParameter();
 
-		virtual void setPosition(const ofPoint& p);
+		virtual void setPosition(const glm::vec3& p);
 		virtual void setPosition(float x, float y);
+		
+		void enableHeader();
+		void disableHeader();
+		bool isHeaderEnabled();
 	protected:
+		bool bHeaderEnabled = true;
 		virtual void render();
 		virtual bool setValue(float mx, float my, bool bCheck);
+		virtual void onMinimize();
+		virtual void onMaximize();
 
 		float spacing, spacingNextElement;
-		float header;
+		ofRectangle headerRect;
 
 		template <class ControlType>
 		ControlType & getControlType(const std::string& name);

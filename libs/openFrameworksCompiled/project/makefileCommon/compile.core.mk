@@ -2,31 +2,31 @@
 
 ################################################################################
 ifdef MAKEFILE_DEBUG
-	$(info ===================compile.core.make================================)
-endif
-
-ifdef PLATFORM_CXX
-	CXX = $(PLATFORM_CXX)
+    $(info ===================compile.core.make================================)
 endif
 
 ifdef PROJECT_CXX
-	CXX = $(PROJECT_CXX)
+	CXX ?= $(PROJECT_CXX)
 endif
 
-ifdef PLATFORM_CC
-	CC = $(PLATFORM_CC)
+ifdef PLATFORM_CXX
+	CXX ?= $(PLATFORM_CXX)
 endif
 
 ifdef PROJECT_CC
-	CC = $(PROJECT_CC)
+	CC ?= $(PROJECT_CC)
 endif
 
-ifdef PLATFORM_AR
-	AR = $(PLATFORM_AR)
+ifdef PLATFORM_CC
+	CC ?= $(PLATFORM_CC)
 endif
 
 ifdef PROJECT_AR
-	AR = $(PROJECT_AR)
+	AR ?= $(PROJECT_AR)
+endif
+
+ifdef PLATFORM_AR
+	AR ?= $(PLATFORM_AR)
 endif
 
 ifdef PLATFORM_ARFLAGS
@@ -181,14 +181,14 @@ OF_CORE_OBJ_FILES = $(addprefix $(OF_CORE_OBJ_OUTPUT_PATH),$(patsubst $(OF_ROOT)
 # DEBUG INFO
 ################################################################################
 ifdef MAKEFILE_DEBUG
-	$(info ========================= compile.core.make flags ========================)
-	$(info OF_CORE_OBJ_OUTPUT_PATH=$(OF_CORE_OBJ_OUTPUT_PATH))
+    $(info ========================= compile.core.make flags ========================)
+    $(info OF_CORE_OBJ_OUTPUT_PATH=$(OF_CORE_OBJ_OUTPUT_PATH))
 
-	$(info ---OF_CORE_DEPENDENCY_FILES---)
-	$(foreach v, $(OF_CORE_DEPENDENCY_FILES),$(info $(v)))
+    $(info ---OF_CORE_DEPENDENCY_FILES---)
+    $(foreach v, $(OF_CORE_DEPENDENCY_FILES),$(info $(v)))
 
-	$(info ---OF_CORE_OBJ_FILES---)
-	$(foreach v, $(OF_CORE_OBJ_FILES),$(info $(v)))
+    $(info ---OF_CORE_OBJ_FILES---)
+    $(foreach v, $(OF_CORE_OBJ_FILES),$(info $(v)))
 endif
 
 
@@ -230,7 +230,7 @@ all:
 
 $(OF_CORE_OBJ_OUTPUT_PATH).compiler_flags: force
 	@mkdir -p $(OF_CORE_OBJ_OUTPUT_PATH)
-	@if [ "$(strip $(OPTIMIZATION_CFLAGS) $(CFLAGS) $(CXXFLAGS))" != "$(strip $$(cat $@))" ]; then echo "Compiler flags have changed, recompiling"; echo "Old: $(strip $$(cat $@))"; echo "New $(strip $(OPTIMIZATION_CFLAGS) $(CFLAGS) $(CXXFLAGS))"; echo $(strip $(OPTIMIZATION_CFLAGS) $(CFLAGS) $(CXXFLAGS))> $@; fi
+	@if [ "$(strip $(OPTIMIZATION_CFLAGS) $(CFLAGS) $(CXXFLAGS))" != "$(strip $$(cat $@ 2>/dev/null))" ]; then echo "Compiler flags have changed, recompiling"; echo "Old: $(strip $$(cat $@ 2>/dev/null))"; echo "New $(strip $(OPTIMIZATION_CFLAGS) $(CFLAGS) $(CXXFLAGS))"; echo $(strip $(OPTIMIZATION_CFLAGS) $(CFLAGS) $(CXXFLAGS))> $@; fi
 
 
 #This rule does the compilation

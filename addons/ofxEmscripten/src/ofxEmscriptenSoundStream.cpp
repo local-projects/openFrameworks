@@ -8,7 +8,9 @@
 #include "ofxEmscriptenSoundStream.h"
 #include "html5audio.h"
 #include "ofBaseApp.h"
-#include "ofBaseTypes.h"
+#include "ofLog.h"
+
+using namespace std;
 
 int ofxEmscriptenAudioContext();
 
@@ -55,11 +57,11 @@ ofSoundDevice ofxEmscriptenSoundStream::getOutDevice() const{
 }
 
 void ofxEmscriptenSoundStream::start() {
-
+	html5audio_context_start(context);
 }
 
 void ofxEmscriptenSoundStream::stop() {
-
+	html5audio_context_stop(context);
 }
 
 void ofxEmscriptenSoundStream::close() {

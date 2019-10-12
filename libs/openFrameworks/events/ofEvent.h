@@ -9,6 +9,7 @@
 #include <atomic>
 #include <stddef.h>
 #include <functional>
+#include <deque>
 
 
 /*! \cond PRIVATE */
@@ -68,7 +69,7 @@ namespace priv{
 
 	// -------------------------------------
 	inline std::unique_ptr<StdFunctionId> make_function_id(){
-		return std::unique_ptr<StdFunctionId>(new StdFunctionId());
+		return std::make_unique<StdFunctionId>();
 	}
 
 	// -------------------------------------
@@ -241,7 +242,7 @@ namespace priv{
 		};
 
 		std::unique_ptr<EventToken> make_token(const Function & f){
-			return std::unique_ptr<EventToken>(new EventToken(self,*f.id));
+			return std::make_unique<EventToken>(self,*f.id);
 		}
 
 		template<typename TFunction>
@@ -378,13 +379,52 @@ enum ofEventOrder{
 class ofEventListener{
 public:
 	ofEventListener(){}
+	ofEventListener(const ofEventListener &) = delete;
+	ofEventListener(ofEventListener &&) = delete;
+	ofEventListener & operator=(const ofEventListener&) = delete;
+	ofEventListener & operator=(ofEventListener&&) = delete;
+
 	ofEventListener(std::unique_ptr<of::priv::AbstractEventToken> && token)
-	:token(std::move(token)){}
+		:token(std::move(token)){}
+
+	ofEventListener & operator=(std::unique_ptr<of::priv::AbstractEventToken> && token){
+		std::swap(this->token, token);
+		return *this;
+	}
+
 	void unsubscribe(){
 		token.reset();
 	}
 private:
 	std::unique_ptr<of::priv::AbstractEventToken> token;
+};
+
+
+
+// -------------------------------------
+class ofEventListeners{
+public:
+	ofEventListeners(){};
+	ofEventListeners(const ofEventListeners &) = delete;
+	ofEventListeners(ofEventListeners &&) = delete;
+	ofEventListeners & operator=(const ofEventListeners&) = delete;
+	ofEventListeners & operator=(ofEventListeners&&) = delete;
+
+
+	void push(std::unique_ptr<of::priv::AbstractEventToken> && listener){
+		listeners.emplace_back(std::move(listener));
+	}
+
+	void unsubscribe(std::size_t pos){
+		listeners[pos].unsubscribe();
+	}
+
+	void unsubscribeAll(){
+		listeners.clear();
+	}
+
+private:
+	std::deque<ofEventListener> listeners;
 };
 
 
@@ -425,7 +465,7 @@ protected:
 
 	template<class TObj, typename TMethod>
 	std::unique_ptr<FunctionId<TObj,TMethod>> make_function_id(TObj * listener, TMethod method){
-		return std::unique_ptr<FunctionId<TObj,TMethod>>(new FunctionId<TObj,TMethod>(listener,method));
+		return std::make_unique<FunctionId<TObj,TMethod>>(listener,method);
 	}
 
 	template<class TObj>
@@ -486,8 +526,8 @@ protected:
 
 public:
 	template<class TObj, typename TMethod>
-	ofEventListener newListener(TObj * listener, TMethod method, int priority = OF_EVENT_ORDER_AFTER_APP){
-		return ofEventListener(addFunction(make_function(listener,method,priority)));
+	std::unique_ptr<of::priv::AbstractEventToken> newListener(TObj * listener, TMethod method, int priority = OF_EVENT_ORDER_AFTER_APP){
+		return addFunction(make_function(listener,method,priority));
 	}
 
 	template<class TObj, typename TMethod>
@@ -501,8 +541,8 @@ public:
 	}
 
 	template<typename TFunction>
-	ofEventListener newListener(TFunction function, int priority = OF_EVENT_ORDER_AFTER_APP) {
-		return ofEventListener(addFunction(make_function(std::function<typename of::priv::callable_traits<TFunction>::function_type>(function), priority)));
+	std::unique_ptr<of::priv::AbstractEventToken> newListener(TFunction function, int priority = OF_EVENT_ORDER_AFTER_APP) {
+		return addFunction(make_function(std::function<typename of::priv::callable_traits<TFunction>::function_type>(function), priority));
 	}
 
 	template<typename TFunction>
@@ -649,8 +689,8 @@ public:
 	}
 
 	template<class TObj, typename TMethod>
-	ofEventListener newListener(TObj * listener, TMethod method, int priority = OF_EVENT_ORDER_AFTER_APP){
-		return ofEventListener(addFunction(make_function(listener,method,priority)));
+	std::unique_ptr<of::priv::AbstractEventToken> newListener(TObj * listener, TMethod method, int priority = OF_EVENT_ORDER_AFTER_APP){
+		return addFunction(make_function(listener,method,priority));
 	}
 
 	template<class TObj, typename TMethod>
@@ -664,8 +704,8 @@ public:
 	}
 
 	template<typename TFunction>
-	ofEventListener newListener(TFunction function, int priority = OF_EVENT_ORDER_AFTER_APP) {
-		return ofEventListener(addFunction(make_function(std::function<typename of::priv::callable_traits<TFunction>::function_type>(function), priority)));
+	std::unique_ptr<of::priv::AbstractEventToken> newListener(TFunction function, int priority = OF_EVENT_ORDER_AFTER_APP) {
+		return addFunction(make_function(std::function<typename of::priv::callable_traits<TFunction>::function_type>(function), priority));
 	}
 
 	template<typename TFunction>

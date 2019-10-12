@@ -1,6 +1,8 @@
 #include "ofUtils.h"
 #include "ofParameter.h"
 
+using namespace std;
+
 ofParameterGroup::ofParameterGroup()
 :obj(new Value)
 {
@@ -19,11 +21,12 @@ void ofParameterGroup::add(ofAbstractParameter & parameter){
 }
 
 void ofParameterGroup::remove(ofAbstractParameter &param){
-	std::for_each(obj->parameters.begin(), obj->parameters.end(), [&](shared_ptr<ofAbstractParameter>& p){
+	for(auto & p: obj->parameters){
 		if(p->isReferenceTo(param)){
 			remove(param.getName());
+			return;
 		}
-	});
+	}
 }
 
 void ofParameterGroup::remove(size_t index){
@@ -34,15 +37,26 @@ void ofParameterGroup::remove(size_t index){
 }
 
 void ofParameterGroup::remove(const string &name){
-	if(!contains(name)){
+	auto escaped = escape(name);
+	if(!contains(escaped)){
 		return;
 	}
-	obj->parameters.erase(obj->parameters.begin() + obj->parametersIndex[name]);
-	obj->parametersIndex.erase(name);
+	size_t paramIndex = obj->parametersIndex[escaped];
+	obj->parameters.erase(obj->parameters.begin() + paramIndex);
+	obj->parametersIndex.erase(escaped);
+	std::for_each(obj->parameters.begin() + paramIndex, obj->parameters.end(), [&](shared_ptr<ofAbstractParameter>& p){
+		obj->parametersIndex[p->getEscapedName()] -= 1;
+	});
 }
 
 void ofParameterGroup::clear(){
+	auto name = this->getName();
 	obj.reset(new Value);
+	setName(name);
+}
+
+string ofParameterGroup::valueType() const{
+	return typeid(*this).name();
 }
 
 const ofParameter<void> & ofParameterGroup::getVoid(const string& name) const	{
@@ -95,6 +109,10 @@ const ofParameter<ofShortColor> & ofParameterGroup::getShortColor(const string& 
 
 const ofParameter<ofFloatColor> & ofParameterGroup::getFloatColor(const string& name) const{
 	return get<ofFloatColor>(name);
+}
+
+const ofParameter<ofRectangle> & ofParameterGroup::getRectangle(const string& name) const{
+	return get<ofRectangle>(name);
 }
 
 const ofParameterGroup & ofParameterGroup::getGroup(const string& name) const{
@@ -153,6 +171,9 @@ const ofParameter<ofFloatColor> & ofParameterGroup::getFloatColor(std::size_t po
 	return get<ofFloatColor>(pos);
 }
 
+const ofParameter<ofRectangle> & ofParameterGroup::getRectangle(std::size_t pos) const{
+	return get<ofRectangle>(pos);
+}
 
 const ofParameterGroup & ofParameterGroup::getGroup(std::size_t pos) const{
 	if(pos>=size()){
@@ -217,6 +238,9 @@ ofParameter<ofShortColor> & ofParameterGroup::getShortColor(const string& name){
 ofParameter<ofFloatColor> & ofParameterGroup::getFloatColor(const string& name){
 	return get<ofFloatColor>(name);
 }
+ofParameter<ofRectangle> & ofParameterGroup::getRectangle(const string& name){
+	return get<ofRectangle>(name);
+}
 
 ofParameterGroup & ofParameterGroup::getGroup(const string& name){
 	return static_cast<ofParameterGroup& >(get(name));
@@ -274,6 +298,9 @@ ofParameter<ofFloatColor> & ofParameterGroup::getFloatColor(std::size_t pos){
 	return get<ofFloatColor>(pos);
 }
 
+ofParameter<ofRectangle> & ofParameterGroup::getRectangle(std::size_t pos){
+	return get<ofRectangle>(pos);
+}
 
 ofParameterGroup & ofParameterGroup::getGroup(std::size_t pos){
 	if(pos>=size()){

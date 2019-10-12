@@ -1,52 +1,13 @@
-// TODO:
-// get face info properly
-// use edge flags
+// This include guard is not a pragma once on purpose
+// so some IDEs are happy include this file back form the corresponding inl
+#ifndef OF_MESH_H
+#define OF_MESH_H
 
-#pragma once
-
-#include "ofGLUtils.h"
 #include "ofConstants.h"
+#include "ofGLUtils.h"
 
 template<class V, class N, class C, class T>
 class ofMeshFace_;
-
-template<typename T>
-struct ofArrayView{
-		const T * data;
-		std::size_t size;
-};
-
-class ofMeshData{
-	public:
-		virtual ~ofMeshData();
-		virtual ofArrayView<void> getVerticesData() const = 0;
-		virtual ofArrayView<void> getNormalsData() const = 0;
-		virtual ofArrayView<void> getTextureCoordsData() const = 0;
-		virtual ofArrayView<void> getColorsData() const = 0;
-		virtual ofArrayView<ofIndexType> getIndicesData() const = 0;
-
-		virtual int getVerticesDim() const = 0;
-		virtual int getNormalsDim() const = 0;
-		virtual int getTextureCoordsDim() const = 0;
-		virtual int getColorsDim() const = 0;
-		virtual int getIndicesDim() const = 0;
-
-		virtual std::size_t getNumVertices() const = 0;
-		virtual std::size_t getNumNormals() const = 0;
-		virtual std::size_t getNumTextureCoords() const = 0;
-		virtual std::size_t getNumColors() const = 0;
-		virtual std::size_t getNumIndices() const = 0;
-
-		virtual bool usingVertices() const = 0;
-		virtual bool usingNormals() const = 0;
-		virtual bool usingColors() const = 0;
-		virtual bool usingTextures() const = 0;
-
-		virtual bool hasNormals() const = 0;
-		virtual bool hasColors() const = 0;
-		virtual bool hasTexCoords() const = 0;
-
-};
 
 /// \brief Represents a set of vertices in 3D spaces with normals, colors,
 /// and texture coordinates at those points.
@@ -130,11 +91,11 @@ public:
 	/// OF_PRIMITIVE_TRIANGLE_FAN, OF_PRIMITIVE_LINES, OF_PRIMITIVE_LINE_STRIP,
 	/// OF_PRIMITIVE_LINE_LOOP, OF_PRIMITIVE_POINTS.
 	/// See [ofGLUtils](../gl/ofGLUtils.htm) for more information on these types.
-	ofMesh_(ofPrimitiveMode mode, const vector<V>& verts);
+	ofMesh_(ofPrimitiveMode mode, const std::vector<V>& verts);
 
 	virtual ~ofMesh_(){}
 
-	void setFromTriangles( const vector<ofMeshFace_<V,N,C,T>>& tris, bool bUseFaceNormal=false );
+	void setFromTriangles( const std::vector<ofMeshFace_<V,N,C,T>>& tris, bool bUseFaceNormal=false );
 
 	/// \}
 	/// \name Mesh Mode
@@ -221,7 +182,7 @@ public:
 	/// \brief Add a vector of vertices to a mesh, allowing you to push out
 	/// many at once rather than adding one at a time. The vector of vertices
 	/// is added after the end of the current vertices list.
-	void addVertices(const vector<V>& verts);
+	void addVertices(const std::vector<V>& verts);
 
 	/// \brief Add an array of vertices to the mesh.
 	/// Because you are using a pointer to the array you also have to define
@@ -255,13 +216,10 @@ public:
 	V getVertex(ofIndexType i) const;
 
 	/// \returns the vector that contains all of the vertices of the mesh.
-	vector<V> & getVertices();
+	std::vector<V> & getVertices();
 
 	/// \returns the vector that contains all of the vertices of the mesh.
-	const vector<V> & getVertices() const;
-
-	/// \returns If the vertices of the mesh have changed, been added or removed.
-	bool haveVertsChanged();
+	const std::vector<V> & getVertices() const;
 
 	/// \returns Whether the mesh has any vertices.
 	bool hasVertices() const;
@@ -300,7 +258,7 @@ public:
 	/// allowing you to push out many normals at once rather than
 	/// adding one at a time. The vector of normals is added after the end of
 	/// the current normals list.
-	void addNormals(const vector<N>& norms);
+	void addNormals(const std::vector<N>& norms);
 
 	/// \brief Add an array of normals to the mesh.
 	/// Because you are using a pointer to the array you also have to define
@@ -331,14 +289,11 @@ public:
 	/// will force a reset of the cache.
 	/// \returns the vector that contains all of the normals of the mesh,
 	/// if it has any.
-	vector<N> & getNormals();
+	std::vector<N> & getNormals();
 
 	/// \returns the vector that contains all of the normals of the mesh, if
 	/// it has any. (read only)
-	const vector<N> & getNormals() const;
-
-	/// \returns If the normals of the mesh have changed, been added or removed.
-	bool haveNormalsChanged();
+	const std::vector<N> & getNormals() const;
 
 	/// /returnsWhether the mesh has any normals.
 	bool hasNormals() const;
@@ -353,6 +308,9 @@ public:
 	virtual bool usingNormals() const;
 
 	void smoothNormals( float angle );
+        
+        /// \brief Duplicates vertices and updates normals to get a low-poly look.
+        void flatNormals();
 
 	/// \}
 	/// \name Faces
@@ -366,11 +324,11 @@ public:
 	/// by setting (perVertex = true) it will return the same normal value for
 	/// each of the three vertices making up a face.
 	/// \returns a vector containing the calculated normals of each face in the mesh.
-	vector<N> getFaceNormals( bool perVetex=false) const;
+	std::vector<N> getFaceNormals( bool perVetex=false) const;
 
 	/// \returns the mesh as a vector of unique ofMeshFace_s
 	/// a list of triangles that do not share vertices or indices
-	const vector<ofMeshFace_<V,N,C,T>> & getUniqueFaces() const;
+	const std::vector<ofMeshFace_<V,N,C,T>> & getUniqueFaces() const;
 
 	/// \}
 	/// \name Colors
@@ -386,7 +344,7 @@ public:
 
 	/// \brief This adds colors using a reference to a vector of ofColors.
 	/// For each color in the vector, this will put the colors at the corresponding vertex.
-	void addColors(const vector<C>& cols);
+	void addColors(const std::vector<C>& cols);
 
 	/// \brief This adds a pointer of colors to the ofMesh instance with the amount passed as the second parameter.
 	void addColors(const C* cols, std::size_t amt);
@@ -413,13 +371,10 @@ public:
 
 	/// Use this if you plan to change the colors as part of this call as it will force a reset of the cache.
 	/// \returns the vector that contains all of the colors of the mesh, if it has any.
-	vector<C> & getColors();
+	std::vector<C> & getColors();
 
 	/// \returns the vector that contains all of the colors of the mesh, if it has any. (read only)
-	const vector<C> & getColors() const;
-
-	/// \returns If the colors of the mesh have changed, been added or removed.
-	bool haveColorsChanged();
+	const std::vector<C> & getColors() const;
 
 	/// /returns Whether the mesh has any colors.
 	bool hasColors() const;
@@ -454,7 +409,7 @@ public:
 	/// allowing you to push out many at once rather than adding one at a time.
 	/// The vector of texture coordinates is added after the end of the current
 	/// texture coordinates list.
-	void addTexCoords(const vector<T>& tCoords);
+	void addTexCoords(const std::vector<T>& tCoords);
 
 	/// \brief  Add an array of texture coordinates to the mesh.
 	/// Because you are using a pointer to the array you also have to define
@@ -485,14 +440,11 @@ public:
 	/// Use this if you plan to change the texture coordinates as part of this
 	/// call as it will force a reset of the cache.
 	/// \returns a vector of Vec2f representing the texture coordinates for the whole mesh.
-	vector<T> & getTexCoords();
+	std::vector<T> & getTexCoords();
 
 	/// Because OF uses ARB textures these are in pixels rather than 0-1 normalized coordinates.
 	/// \returns a vector of Vec2f representing the texture coordinates for the whole mesh. (read only)
-	const vector<T> & getTexCoords() const;
-
-	/// \returns If the texture coords of the mesh have changed, been added or removed.
-	bool haveTexCoordsChanged();
+	const std::vector<T> & getTexCoords() const;
 
 	/// /returns Whether the mesh has any textures assigned to it.
 	bool hasTexCoords() const;
@@ -519,7 +471,7 @@ public:
 	/// \brief Use this if you plan to change the indices as part of this call as it
 	/// will force a reset of the cache.
 	/// \returns the vector that contains all of the indices of the mesh, if it has any.
-	vector<ofIndexType> & getIndices();
+	std::vector<ofIndexType> & getIndices();
 
 
 	/// \returns the index from the index vector. Each index represents the index of the vertex in the vertices vector. This determines the way that the vertices are connected into the polgoynon type set in the primitiveMode.
@@ -551,7 +503,7 @@ public:
 	void addIndex(ofIndexType i);
 
 	/// \brief This adds a vector of indices.
-	void addIndices(const vector<ofIndexType>& inds);
+	void addIndices(const std::vector<ofIndexType>& inds);
 
 	/// \brief This adds indices to the ofMesh by pointing to an array of indices.
 	/// The "amt" defines the length of the array.
@@ -579,10 +531,7 @@ public:
 
 
 	/// \returns the vector that contains all of the indices of the mesh, if it has any. (read only)
-	const vector<ofIndexType> & getIndices() const;
-
-	/// \returns If the indices of the mesh have changed, been added or removed.
-	bool haveIndicesChanged();
+	const std::vector<ofIndexType> & getIndices() const;
 
 	/// /returns Whether the mesh has any indices assigned to it.
 	bool hasIndices() const;
@@ -639,7 +588,7 @@ public:
 	///
 	/// It expects that the file will be in the [PLY Format](http://en.wikipedia.org/wiki/PLY_(file_format)).
 	/// It will only load meshes saved in the PLY ASCII format; the binary format is not supported.
-    void load(std::filesystem::path path);
+    void load(const std::filesystem::path& path);
 
 	///  \brief Saves the mesh at the passed path in the [PLY Format](http://en.wikipedia.org/wiki/PLY_(file_format)).
 	///
@@ -650,21 +599,38 @@ public:
 	///  If you're planning on reloading the mesh into ofMesh, ofMesh currently only supports loading the ASCII format.
 	///
 	///  For more information, see the [PLY format specification](http://paulbourke.net/dataformats/ply/).
-    void save(std::filesystem::path path, bool useBinary = false) const;
+    void save(const std::filesystem::path& path, bool useBinary = false) const;
 
 	/// \}
 
+protected:
+
+	/// \returns If the vertices of the mesh have changed, been added or removed.
+	bool haveVertsChanged();
+
+	/// \returns If the normals of the mesh have changed, been added or removed.
+	bool haveNormalsChanged();
+
+	/// \returns If the colors of the mesh have changed, been added or removed.
+	bool haveColorsChanged();
+
+	/// \returns If the texture coords of the mesh have changed, been added or removed.
+	bool haveTexCoordsChanged();
+
+	/// \returns If the indices of the mesh have changed, been added or removed.
+	bool haveIndicesChanged();
+
 private:
 
-	vector<V> vertices;
-	vector<C> colors;
-	vector<N> normals;
-	vector<T> texCoords;
-	vector<ofIndexType> indices;
+	std::vector<V> vertices;
+	std::vector<C> colors;
+	std::vector<N> normals;
+	std::vector<T> texCoords;
+	std::vector<ofIndexType> indices;
 
 	// this variables are only caches and returned always as const
 	// mutable allows to change them from const methods
-	mutable vector<ofMeshFace_<V,N,C,T>> faces;
+	mutable std::vector<ofMeshFace_<V,N,C,T>> faces;
 	mutable bool bFacesDirty;
 
 	bool bVertsChanged, bColorsChanged, bNormalsChanged, bTexCoordsChanged,
@@ -740,3 +706,5 @@ private:
 
 using ofMesh = ofMesh_<ofDefaultVertexType, ofDefaultNormalType, ofDefaultColorType, ofDefaultTexCoordType>;
 using ofMeshFace = ofMeshFace_<ofDefaultVertexType, ofDefaultNormalType, ofDefaultColorType, ofDefaultTexCoordType>;
+
+#endif

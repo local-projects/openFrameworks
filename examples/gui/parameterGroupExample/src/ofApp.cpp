@@ -7,6 +7,7 @@ void ofApp::setup(){
 
 	parameters.setName("settings");
 	parameters.add(vSync.set("vSync",true));
+	vSync.addListener(this, &ofApp::vSyncChanged);
 	parameters.add(renderer1.parameters);
 	parameters.add(renderer2.parameters);
 
@@ -20,6 +21,7 @@ void ofApp::setup(){
 
 void ofApp::vSyncChanged(bool & vSync){
 	ofSetVerticalSync(vSync);
+	ofLogNotice() << "vSync changed: " << vSync;
 }
 
 
@@ -44,12 +46,12 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 	if(key=='s'){
-		settings.serialize(parameters);
+        ofSerialize(settings,parameters);
 		settings.save("settings.xml");
 	}
 	if(key=='l'){
 		settings.load("settings.xml");
-		settings.deserialize(parameters);
+        ofDeserialize(settings, parameters);
 	}
 	if(key=='o'){
 		cout << renderer1.parameters;
