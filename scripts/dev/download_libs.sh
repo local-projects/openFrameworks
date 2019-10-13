@@ -30,7 +30,11 @@ EOF
 
 download(){
     echo "Downloading ${VER}/$1"
-    wget ci.openframeworks.cc/libs/${VER}/$1 $SILENT_ARGS
+    if [ ${VER} == "master" ]; then
+        wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
+    else
+        wget ci.openframeworks.cc/libs/${VER}/$1 $SILENT_ARGS
+    fi
 }
 
 # trap any script errors and exit
