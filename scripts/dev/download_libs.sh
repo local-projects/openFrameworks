@@ -29,8 +29,12 @@ EOF
 }
 
 download(){
-    echo "Downloading $1"
-    wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
+    echo "Downloading ${VER}/$1"
+    if [ ${VER} == "master" ]; then
+        wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
+    else
+        wget ci.openframeworks.cc/libs/${VER}/$1 $SILENT_ARGS
+    fi
 }
 
 # trap any script errors and exit
@@ -141,40 +145,40 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $SCRIPT_DIR
 
 if [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs2015" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_32_1.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_32_2.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_32_3.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_32_4.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_1.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_2.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_3.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_4.zip"
+    PKGS="openFrameworksLibs_master_${PLATFORM}_32_1.zip \
+          openFrameworksLibs_master_${PLATFORM}_32_2.zip \
+          openFrameworksLibs_master_${PLATFORM}_32_3.zip \
+          openFrameworksLibs_master_${PLATFORM}_32_4.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_1.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_2.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_3.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_4.zip"
 elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs2017" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_32_1.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_32_2.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_32_3.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_32_4.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_1.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_2.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_3.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_64_4.zip"
+    PKGS="openFrameworksLibs_master_${PLATFORM}_32_1.zip \
+          openFrameworksLibs_master_${PLATFORM}_32_2.zip \
+          openFrameworksLibs_master_${PLATFORM}_32_3.zip \
+          openFrameworksLibs_master_${PLATFORM}_32_4.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_1.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_2.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_3.zip \
+          openFrameworksLibs_master_${PLATFORM}_64_4.zip"
 elif [ "$PLATFORM" == "msys2" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_.zip"
+    PKGS="openFrameworksLibs_master_${PLATFORM}_${ARCH}_.zip"
 elif [ "$PLATFORM" == "vs2015" ] || [ "$PLATFORM" == "vs2017" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_1.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_2.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_3.zip \
-          openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_4.zip"
+    PKGS="openFrameworksLibs_master_${PLATFORM}_${ARCH}_1.zip \
+          openFrameworksLibs_master_${PLATFORM}_${ARCH}_2.zip \
+          openFrameworksLibs_master_${PLATFORM}_${ARCH}_3.zip \
+          openFrameworksLibs_master_${PLATFORM}_${ARCH}_4.zip"
 elif [ "$ARCH" == "" ] && [[ "$PLATFORM" == "osx" || "$PLATFORM" == "ios" || "$PLATFORM" == "tvos" ]]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}1.tar.bz2 \
-          openFrameworksLibs_${VER}_${PLATFORM}2.tar.bz2 \
-          openFrameworksLibs_${VER}_${PLATFORM}3.tar.bz2 \
-          openFrameworksLibs_${VER}_${PLATFORM}4.tar.bz2"
+    PKGS="openFrameworksLibs_master_${PLATFORM}1.tar.bz2 \
+          openFrameworksLibs_master_${PLATFORM}2.tar.bz2 \
+          openFrameworksLibs_master_${PLATFORM}3.tar.bz2 \
+          openFrameworksLibs_master_${PLATFORM}4.tar.bz2"
 elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "android" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}armv7.tar.bz2 \
-          openFrameworksLibs_${VER}_${PLATFORM}x86.tar.bz2"
+    PKGS="openFrameworksLibs_master_${PLATFORM}armv7.tar.bz2 \
+          openFrameworksLibs_master_${PLATFORM}x86.tar.bz2"
 else # Linux
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}${ARCH}.tar.bz2"
+    PKGS="openFrameworksLibs_master_${PLATFORM}${ARCH}.tar.bz2"
 fi
 
 for PKG in $PKGS; do
