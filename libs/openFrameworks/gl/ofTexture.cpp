@@ -412,13 +412,14 @@ void ofTexture::allocate(const ofTextureData & textureData){
 
 //----------------------------------------------------------
 
-void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pixelType){
+void ofTexture::allocate(const ofTextureData& textureData, int glFormat, int pixelType) {
+
 #ifndef TARGET_OPENGLES
-	if(texData.textureTarget == GL_TEXTURE_2D || texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB){
+	if (texData.textureTarget == GL_TEXTURE_2D || texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB) {
 #else
-	if(texData.textureTarget == GL_TEXTURE_2D){
+	if (texData.textureTarget == GL_TEXTURE_2D) {
 #endif
-		if( textureData.width <= 0.0 || textureData.height <= 0.0 ){
+		if (textureData.width <= 0.0 || textureData.height <= 0.0) {
 			ofLogError("ofTexture") << "allocate(): ofTextureData has 0 width and/or height: " << textureData.width << "x" << textureData.height;
 			return;
 		}
@@ -427,18 +428,20 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
 	texData = textureData;
 	//our graphics card might not support arb so we have to see if it is supported.
 #ifndef TARGET_OPENGLES
-	if( texData.textureTarget==GL_TEXTURE_RECTANGLE_ARB && ofGLSupportsNPOTTextures() ){
+	if (texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB && ofGLSupportsNPOTTextures()) {
 		texData.tex_w = texData.width;
 		texData.tex_h = texData.height;
 		texData.tex_t = texData.width;
 		texData.tex_u = texData.height;
-	}else if(texData.textureTarget == GL_TEXTURE_2D)
+	}
+	else if (texData.textureTarget == GL_TEXTURE_2D)
 #endif
 	{
-		if(ofGLSupportsNPOTTextures()){
+		if (ofGLSupportsNPOTTextures()) {
 			texData.tex_w = texData.width;
 			texData.tex_h = texData.height;
-		}else{
+		}
+		else {
 			//otherwise we need to calculate the next power of 2 for the requested dimensions
 			//ie (320x240) becomes (512x256)
 			texData.tex_w = ofNextPow2(texData.width);
@@ -451,29 +454,63 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
 
 	// attempt to free the previous bound texture, if we can:
 	clear();
-
-	glGenTextures(1, (GLuint *)&texData.textureID);   // could be more then one, but for now, just one
+	glGenTextures(1, (GLuint*)& texData.textureID);   // could be more then one, but for now, just one
 	retain(texData.textureID);
 
 #ifndef TARGET_OPENGLES
-	if(texData.textureTarget == GL_TEXTURE_2D || texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB){
+	if (texData.textureTarget == GL_TEXTURE_2D || texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB) {
 #else
-	if(texData.textureTarget == GL_TEXTURE_2D){
+	if (texData.textureTarget == GL_TEXTURE_2D) {
 #endif
-		glBindTexture(texData.textureTarget,texData.textureID);
-		glTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, glFormat, pixelType, 0);  // init to black...
+
+#ifndef TARGET_OPENGLES
+		bool isCompressed = texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+			texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
+			texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+#endif
+
+		glBindTexture(texData.textureTarget, texData.textureID);
+
+#ifndef TARGET_OPENGLES
+		if (!isCompressed) {
+#endif
+			glTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, glFormat, pixelType, 0);  // init to black...
+
+#ifndef TARGET_OPENGLES
+		}
+		else {
+			size_t dataSize;
+
+			if (texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT) { //DXT1 compression ratio is 8:1
+				dataSize = texData.tex_w * texData.tex_h / 2; //RGBA x 2 becomes one byte, 8:1
+			}
+			else { //DXT3 and DXT5 compression ratio is 4:1
+				dataSize = texData.tex_w * texData.tex_h; //RGBA becomes one byte, 4:1
+			}
+
+			glCompressedTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, dataSize/*data len*/, 0);
+			GLuint err = glGetError();
+			if (err != GL_NO_ERROR) {
+				ofLogError("ofTexture") << "Error allocating compressed ofTexture: " << err;
+				if (((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0) {
+					ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
+				}
+			}
+		}
+#endif
 
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_MAG_FILTER, texData.magFilter);
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_MIN_FILTER, texData.minFilter);
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_WRAP_S, texData.wrapModeHorizontal);
 		glTexParameterf(texData.textureTarget, GL_TEXTURE_WRAP_T, texData.wrapModeVertical);
 
-		#ifndef TARGET_PROGRAMMABLE_GL
-			if (!ofIsGLProgrammableRenderer()){
-				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			}
-		#endif
-		glBindTexture(texData.textureTarget,0);
+#ifndef TARGET_PROGRAMMABLE_GL
+		if (!ofIsGLProgrammableRenderer()) {
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		}
+#endif
+		glBindTexture(texData.textureTarget, 0);
 	}
 
 	texData.bAllocated = true;
@@ -651,41 +688,65 @@ void ofTexture::loadData(const ofBufferObject & buffer, int glFormat, int glType
 #endif
 
 //----------------------------------------------------------
-void ofTexture::loadData(const void * data, int w, int h, int glFormat, int glType){
-
-	if(w > texData.tex_w || h > texData.tex_h) {
-		if(isAllocated()){
+void ofTexture::loadData(const void* data, int w, int h, int glFormat, int glType) {
+	if (w > texData.tex_w || h > texData.tex_h) {
+		if (isAllocated()) {
 			allocate(w, h, texData.glInternalFormat, glFormat, glType);
-		}else{
+		}
+		else {
 			// TODO: guess correct internal from glFormat
 			allocate(w, h, glFormat, glFormat, glType);
 		}
 	}
-	
+
 	// compute new tex co-ords based on the ratio of data's w, h to texture w,h;
 #ifndef TARGET_OPENGLES
-	if (texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB){
+	if (texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB) {
 		texData.tex_t = w;
 		texData.tex_u = h;
-	} else 
+	}
+	else
 #endif
 	{
 		texData.tex_t = (float)(w) / (float)texData.tex_w;
 		texData.tex_u = (float)(h) / (float)texData.tex_h;
 	}
-	
+
 	// bind texture
-	glBindTexture(texData.textureTarget, (GLuint) texData.textureID);
-	//update the texture image:
-	glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
+	glBindTexture(texData.textureTarget, (GLuint)texData.textureID);
+
+#ifndef TARGET_OPENGLES
+	bool isCompressed = texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+		texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
+		texData.glInternalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+	if (!isCompressed) {
+#endif
+		//update the texture image:
+		glTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, glType, data);
+#ifndef TARGET_OPENGLES
+	}
+	else {
+		std::size_t dataLen = std::size_t((texData.glInternalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT) ? w * h / 2 : w * h);
+		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, dataLen, data);
+		GLuint err = glGetError();
+		if (err != GL_NO_ERROR) {
+			ofLogError("ofTexture") << "Error loading compressed ofTexture: " << err;
+			if (((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0) {
+				ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
+			}
+		}
+	}
+#endif
+
 	// unbind texture target by binding 0
 	glBindTexture(texData.textureTarget, 0);
-	
+
 	if (bWantsMipmap) {
 		// auto-generate mipmap, since this ofTexture wants us to.
 		generateMipmap();
 	}
-	
+
 }
 
 //----------------------------------------------------------
