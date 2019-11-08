@@ -33,7 +33,7 @@
 	if(audioSessionSetup) {
 		return;
 	}
-	NSString * playbackCategory = AVAudioSessionCategoryPlayAndRecord;
+	NSString * playbackCategory = AVAudioSessionCategoryPlayback;
 #ifdef TARGET_OF_TVOS
 	playbackCategory = AVAudioSessionCategoryPlayback;
 #endif
@@ -103,18 +103,18 @@
     }
     BOOL bOk = [self.player play];
     if(bOk) {
-        [self startTimer];
+        //[self startTimer];
     }
 }
 
 - (void)pause {
     [self.player pause];
-    [self stopTimer];
+    //[self stopTimer];
 }
 
 - (void)stop {
     [self.player stop];
-    [self stopTimer];
+    //[self stopTimer];
 }
 
 //----------------------------------------------------------- states.
@@ -196,6 +196,7 @@
     if(self.player == nil) {
         return 0;
     }
+	NSLog(@"%f / %f \n", self.player.currentTime, (float)self.player.duration);
     return self.player.currentTime / (float)self.player.duration;
 }
 
@@ -241,7 +242,7 @@
 
 - (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player 
                        successfully:(BOOL)flag {
-    [self stopTimer];
+    //[self stopTimer];
     
     if([self.delegate respondsToSelector:@selector(soundPlayerDidFinish)]) {
         [self.delegate soundPlayerDidFinish];
