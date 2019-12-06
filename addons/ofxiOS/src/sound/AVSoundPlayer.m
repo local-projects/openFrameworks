@@ -196,7 +196,7 @@
     if(self.player == nil) {
         return 0;
     }
-	NSLog(@"%f / %f \n", self.player.currentTime, (float)self.player.duration);
+	//NSLog(@"%f / %f \n", self.player.currentTime, (float)self.player.duration);
     return self.player.currentTime / (float)self.player.duration;
 }
 
