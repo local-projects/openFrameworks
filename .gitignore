@@ -8,6 +8,7 @@ openFrameworksDebug.a
 openFrameworksUniversal.a
 libs/openFrameworksCompiled/lib/*/*
 !libs/openFrameworksCompiled/lib/*/.gitkeep
+libs/openFrameworksCompiled/project/vs/openframeworksLib.vcxproj.user
 
 #ignore downloaded libs in ofxKinect addon
 addons/ofxKinect/libs/libusb
