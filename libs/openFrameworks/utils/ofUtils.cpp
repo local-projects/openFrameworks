@@ -162,7 +162,7 @@ namespace priv{
 			ofTime t;
 			t.mode = mode;
 			if(mode == ofTime::System){
-			#if (defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)) || defined(TARGET_EMSCRIPTEN)
+			#if (defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI_LEGACY)) || defined(TARGET_EMSCRIPTEN)
 				struct timespec now;
 				clock_gettime(CLOCK_MONOTONIC, &now);
 				t.seconds = now.tv_sec;
@@ -1165,7 +1165,6 @@ string ofGetVersionInfo(){
 		sstr << "-" << OF_VERSION_PRE_RELEASE;
 	}
 
-	sstr << std::endl;
 	return sstr.str();
 }
 

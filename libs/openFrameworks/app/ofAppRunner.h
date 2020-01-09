@@ -39,7 +39,7 @@ static void noopDeleter(Window*){}
 
 template<typename Window>
 void ofSetupOpenGL(Window * windowPtr, int w, int h, ofWindowMode screenMode){
-	std::shared_ptr<Window> window = std::shared_ptr<Window>(windowPtr,std::ptr_fun(noopDeleter<Window>));
+	std::shared_ptr<Window> window = std::shared_ptr<Window>(windowPtr, std::function<void(Window *)>(noopDeleter<Window>));
 	ofSetupOpenGL(window,w,h,screenMode);
 }
 
@@ -112,7 +112,7 @@ std::shared_ptr<ofBaseRenderer> & ofGetCurrentRenderer();
 void ofSetEscapeQuitsApp(bool bQuitOnEsc);
 
 //-------------------------- native window handles
-#if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
+#if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI_LEGACY)
 typedef unsigned long Window;
 struct _XDisplay;
 typedef struct _XDisplay Display;
