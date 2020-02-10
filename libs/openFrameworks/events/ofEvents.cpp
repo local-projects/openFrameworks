@@ -355,6 +355,7 @@ bool ofCoreEvents::notifyKeyEvent(ofKeyEventArgs & e){
 			}
 
 			pressedKeys.insert(e.key);
+			//ofLogNotice("insert:") << char(e.key);
 			if(!attended){
 				return ofNotifyEvent( keyPressed, e );
 			}else{
@@ -388,7 +389,17 @@ bool ofCoreEvents::notifyKeyEvent(ofKeyEventArgs & e){
 				attended = ofNotifyEvent( keyReleased, keyEventArgs );
 			}
 
+			//ofLogNotice("remove:") << char(e.key);
 			pressedKeys.erase(e.key);
+			if(e.key >=65 && e.key <= 90 ){ //its upercase key, also erase lowercase
+				//ofLogNotice("its upper, so also remove :") << char(e.key + 32);
+				pressedKeys.erase(e.key + 32);
+			}
+			if(e.key >= 97 && e.key <= 122 ){ //its upercase key, also erase lowercase
+				//ofLogNotice("its upper, so also remove :") << char(e.key - 32);
+				pressedKeys.erase(e.key - 32);
+			}
+
 			if(!attended){
 				return ofNotifyEvent( keyReleased, e );
 			}else{
