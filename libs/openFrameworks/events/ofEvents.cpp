@@ -287,8 +287,12 @@ bool ofCoreEvents::notifyUpdate(){
 }
 
 //------------------------------------------
-bool ofCoreEvents::notifyDraw(){
-	auto attended = ofNotifyEvent( draw, voidEventArgs );
+bool ofCoreEvents::notifyDraw(bool actuallyRender){
+
+	bool attended = false;
+	if(actuallyRender){
+		attended = ofNotifyEvent( draw, voidEventArgs );
+	}
 
 	if (bFrameRateSet){
 		timer.waitNext();

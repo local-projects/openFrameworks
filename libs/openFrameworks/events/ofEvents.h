@@ -379,7 +379,7 @@ class ofCoreEvents {
 	//  event notification only for internal OF use
 	bool notifySetup();
 	bool notifyUpdate();
-	bool notifyDraw();
+	bool notifyDraw(bool actuallyRender = true);
 
 	bool notifyKeyPressed(int key, int keycode=-1, int scancode=-1, uint32_t codepoint=0);
 	bool notifyKeyReleased(int key, int keycode=-1, int scancode=-1, uint32_t codepoint=0);

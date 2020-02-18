@@ -16,6 +16,9 @@ class ofAppiOSWindow;
 
 @interface ofxiOSEAGLView : EAGLView {
 
+@public
+	bool shouldRender;
+
 @protected
     NSMutableDictionary * activeTouches;
     glm::vec2 * screenSize;   // because glm::vec2 is forward declared,

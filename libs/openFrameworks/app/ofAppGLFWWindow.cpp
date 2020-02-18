@@ -453,7 +453,7 @@ void ofAppGLFWWindow::draw(){
 	currentRenderer->startRender();
 	if( bEnableSetupScreen ) currentRenderer->setupScreen();
 
-	events().notifyDraw();
+	events().notifyDraw(true);
 
     #ifdef TARGET_WIN32
 	if (currentRenderer->getBackgroundAuto() == false){

@@ -280,6 +280,8 @@ andPreferedRenderer:(ESRendererVersion)version
                                                             selector:@selector(drawView:) 
                                                             userInfo:nil 
                                                              repeats:TRUE];
+            [[NSRunLoop currentRunLoop] addTimer: animationTimer forMode: NSRunLoopCommonModes];
+            [[NSRunLoop currentRunLoop] addTimer: animationTimer forMode: UITrackingRunLoopMode];
         }
         
         animating = YES;

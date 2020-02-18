@@ -60,6 +60,7 @@ static ofxiOSEAGLView * _instanceRef = nil;
                     sharegroup:sharegroup];
     
     bSetup = NO;
+	shouldRender = true;
     if(self) {
         
         _instanceRef = self;
@@ -178,28 +179,30 @@ static ofxiOSEAGLView * _instanceRef = nil;
     window->events().notifyUpdate();
 
     //------------------------------------------
-    
-    [self lockGL];
-    [self startRender];
-    
-    window->renderer()->startRender();
-    
-    if(window->isSetupScreenEnabled()) {
-        window->renderer()->setupScreen();
-    }
-    
-    //------------------------------------------ draw.
-    
-    window->events().notifyDraw();
-    
-    //------------------------------------------
-    
-    window->renderer()->finishRender();
-    
-    [self finishRender];
-    [self unlockGL];
-    
-    [super notifyDraw];   // alerts delegate that a new frame has been drawn.
+
+		if(shouldRender){ //only render if we have to
+			[self lockGL];
+			[self startRender];
+
+			window->renderer()->startRender();
+
+			if(window->isSetupScreenEnabled()) {
+				window->renderer()->setupScreen();
+			}
+		}
+		//------------------------------------------ draw.
+
+		window->events().notifyDraw(shouldRender);
+
+		//------------------------------------------
+		if(shouldRender){ //only render if we have to
+			window->renderer()->finishRender();
+
+			[self finishRender];
+			[self unlockGL];
+
+			[super notifyDraw];   // alerts delegate that a new frame has been drawn.
+		}
 }
 
 - (void)notifyDraw {
