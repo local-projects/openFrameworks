@@ -492,7 +492,7 @@ void ofTexture::allocate(const ofTextureData& textureData, int glFormat, int pix
 			glCompressedTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, dataSize/*data len*/, 0);
 			GLuint err = glGetError();
 			if (err != GL_NO_ERROR) {
-				ofLogError("ofTexture") << "Error allocating compressed ofTexture: " << err;
+				ofLogError("ofTexture") << "Error allocating compressed ofTexture: " << err << " with dims " << (GLint)texData.tex_w << "x" << (GLint)texData.tex_h << ", format " << texData.glInternalFormat;
 				if (((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0) {
 					ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
 				}
@@ -731,7 +731,7 @@ void ofTexture::loadData(const void* data, int w, int h, int glFormat, int glTyp
 		glCompressedTexSubImage2D(texData.textureTarget, 0, 0, 0, w, h, glFormat, dataLen, data);
 		GLuint err = glGetError();
 		if (err != GL_NO_ERROR) {
-			ofLogError("ofTexture") << "Error loading compressed ofTexture: " << err;
+			ofLogError("ofTexture") << "Error loading compressed ofTexture: " << err << " with dims " << w << "x" << h << ", format " << glFormat << ", dataLen " << dataLen;
 			if (((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0) {
 				ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
 			}
