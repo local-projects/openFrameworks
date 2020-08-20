@@ -414,6 +414,8 @@ void ofTexture::allocate(const ofTextureData & textureData){
 
 void ofTexture::allocate(const ofTextureData& textureData, int glFormat, int pixelType) {
 
+	bool setAllocated = true;
+
 #ifndef TARGET_OPENGLES
 	if (texData.textureTarget == GL_TEXTURE_2D || texData.textureTarget == GL_TEXTURE_RECTANGLE_ARB) {
 #else
@@ -492,10 +494,12 @@ void ofTexture::allocate(const ofTextureData& textureData, int glFormat, int pix
 			glCompressedTexImage2D(texData.textureTarget, 0, texData.glInternalFormat, (GLint)texData.tex_w, (GLint)texData.tex_h, 0, dataSize/*data len*/, 0);
 			GLuint err = glGetError();
 			if (err != GL_NO_ERROR) {
-				ofLogError("ofTexture") << "Error allocating compressed ofTexture: " << err << " with dims " << (GLint)texData.tex_w << "x" << (GLint)texData.tex_h << ", format " << texData.glInternalFormat;
+				// Sometimes, this error is produced incorrectly (noncritical) the first time compressed textures are allocated.
+				ofLogNotice("ofTexture") << "Possible error allocating compressed ofTexture: " << err << " with dims " << (GLint)texData.tex_w << "x" << (GLint)texData.tex_h << ", format " << texData.glInternalFormat;
 				if (((size_t)texData.tex_w) % 4 != 0 || ((size_t)texData.tex_h) % 4 != 0) {
 					ofLogError("ofTexture") << "DXT textures require the image width & height to be multiple of 4.";
 				}
+				setAllocated = false;
 			}
 		}
 #endif
@@ -513,7 +517,7 @@ void ofTexture::allocate(const ofTextureData& textureData, int glFormat, int pix
 		glBindTexture(texData.textureTarget, 0);
 	}
 
-	texData.bAllocated = true;
+	texData.bAllocated = setAllocated;
 
 #ifdef TARGET_ANDROID
 	registerTexture(this);
