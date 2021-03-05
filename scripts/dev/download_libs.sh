@@ -18,7 +18,7 @@ cat << EOF
     -a, --arch ARCH             Architecture:
                                     vs2015: 32 or 64
                                     vs2017: 32 or 64
-                                    msys2: 32
+                                    msys2: 32 or 64
                                     android: armv7, arm64, and x86 (if not specified will download all)
                                     linux: 64gcc4, 64gcc5, 64gcc6 / 64, armv6l or armv7l
     -n, --no-overwrite          Merge new libraries with existing ones, use only to download same version for different platforms
@@ -28,9 +28,13 @@ cat << EOF
 EOF
 }
 
+SCRIPT_DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$SCRIPT_DIR" ]]; then SCRIPT_DIR="$PWD"; fi
+. "$SCRIPT_DIR/downloader.sh"
+
 download(){
     echo "Downloading $1"
-    wget ci.openframeworks.cc/libs/$1 $SILENT_ARGS
+    downloader ci.openframeworks.cc/libs/$1 $SILENT_ARGS
 }
 
 # trap any script errors and exit
@@ -96,10 +100,11 @@ if [ "$PLATFORM" == "" ]; then
         PLATFORM="linux"
     elif [ "$OS" == "Darwin" ]; then
         PLATFORM="osx"
+    elif [ "${OS:0:5}" == "MINGW" ]; then
+        PLATFORM="msys2"
     else
         # otherwise we are on windows and will download 32bit msys2
         PLATFORM="msys2"
-        ARCH=32
     fi
 fi
 
@@ -129,7 +134,18 @@ EOF
             exit 1
         fi
     elif [ "$PLATFORM" == "msys2" ]; then
-        ARCH=32
+        if [ "$MSYSTEM" == "MINGW64" ]; then 
+            ARCH=64
+        elif [ "$MSYSTEM" == "MINGW32" ]; then 
+            ARCH=32
+        else
+            cat << EOF
+This MSYS2 variant ($MSYSTEM) is not recognized.
+Check if you are running a MINGW32 or MINGW64 shell.
+Assuming 32bits version for now...
+EOF
+            ARCH=32
+        fi 
     fi
 fi
 
@@ -159,7 +175,7 @@ elif [ "$ARCH" == "" ] && [ "$PLATFORM" == "vs2017" ]; then
           openFrameworksLibs_${VER}_${PLATFORM}_64_3.zip \
           openFrameworksLibs_${VER}_${PLATFORM}_64_4.zip"
 elif [ "$PLATFORM" == "msys2" ]; then
-    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_.zip"
+    PKGS="openFrameworksLibs_${VER}_${PLATFORM}_mingw${ARCH}.zip"
 elif [ "$PLATFORM" == "vs2015" ] || [ "$PLATFORM" == "vs2017" ]; then
     PKGS="openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_1.zip \
           openFrameworksLibs_${VER}_${PLATFORM}_${ARCH}_2.zip \
@@ -229,7 +245,12 @@ for ((i=0;i<${#addonslibs[@]};++i)); do
             rm -rf ../addons/${addons[i]}/libs/${addonslibs[i]}
         fi
         mkdir -p ../addons/${addons[i]}/libs/${addonslibs[i]}
-        rsync -a ${addonslibs[i]}/ ../addons/${addons[i]}/libs/${addonslibs[i]}
+        if ! command -v rsync &> /dev/null
+        then      
+            cp -a ${addonslibs[i]}/ ../addons/${addons[i]}/libs/${addonslibs[i]}     
+        else
+            rsync -a ${addonslibs[i]}/ ../addons/${addons[i]}/libs/${addonslibs[i]}
+        fi
         rm -rf ${addonslibs[i]}
     fi
 done

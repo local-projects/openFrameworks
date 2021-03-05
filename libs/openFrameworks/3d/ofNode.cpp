@@ -8,6 +8,7 @@
 //----------------------------------------
 ofNode::ofNode()
 :parent(nullptr)
+,localTransformMatrix(1)
 ,legacyCustomDrawOverrided(true){
 	setPosition({0.f, 0.f, 0.f});
 	setOrientation({0.f, 0.f, 0.f});
@@ -226,7 +227,8 @@ void ofNode::setOrientation(const glm::quat& q) {
 
 //----------------------------------------
 void ofNode::setOrientation(const glm::vec3& eulerAngles) {
-	setOrientation(glm::angleAxis(ofDegToRad(eulerAngles.x), glm::vec3(1, 0, 0)) * glm::angleAxis(ofDegToRad(eulerAngles.z), glm::vec3(0, 0, 1)) * glm::angleAxis(ofDegToRad(eulerAngles.y), glm::vec3(0, 1, 0)));
+    glm::quat q(glm::radians(eulerAngles));
+    setOrientation(q);
 }
 
 //----------------------------------------

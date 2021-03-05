@@ -168,7 +168,7 @@ Module{
             }else if(platform==="android"){
                libsexceptions =  [
                     "glfw",
-                    "fmodex",
+                    "fmod",
                     "glew",
                     "kiss",
                     "rtAudio",
@@ -500,7 +500,7 @@ Module{
             for(var addon in allAddons){
                 var addonPath = allAddons[addon];
                 var addonFrameworks = [];
-                addonFrameworks = Helpers.parseAddonConfig(addonPath, "ADDON_FRAMEWORKS", addonFrameworks, platform, addonPath+"/");
+                addonFrameworks = Helpers.parseAddonConfig(addonPath, "ADDON_FRAMEWORKS", addonFrameworks, platform);
                 frameworks = frameworks.concat(addonFrameworks);
             }
 
