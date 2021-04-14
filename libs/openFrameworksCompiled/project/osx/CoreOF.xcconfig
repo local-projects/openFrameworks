@@ -30,6 +30,9 @@ HEADER_URIPARSER = "$(OF_PATH)/libs/uriparser/include"
 HEADER_PUGIXML = "$(OF_PATH)/libs/pugixml/include"
 
 LIB_FMODEX = "$(OF_PATH)/libs/fmodex/lib/osx/libfmodex.dylib"
+//on Big Sur, libfmod as libfmodex wont build
+LIB_FMODEX[sdk=macosx11.*] = "$(OF_PATH)/libs/fmod/lib/osx/libfmod.dylib"
+
 LIB_GLFW = "$(OF_PATH)/libs/glfw/lib/osx/glfw3.a"
 LIB_FREEIMAGE = "$(OF_PATH)/libs/FreeImage/lib/osx/freeimage.a"
 LIB_FREETYPE = "$(OF_PATH)/libs/freetype/lib/osx/freetype.a"
